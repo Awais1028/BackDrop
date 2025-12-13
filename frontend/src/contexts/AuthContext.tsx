@@ -9,9 +9,10 @@ interface AuthContextType {
   user: User | null;
   role: UserRole | null;
   isLoading: boolean;
-  login: (email: string, password: string) => void;
+  login: (email: string, password: string, formType: 'user' | 'operator') => void;
   logout: () => void;
   register: (name: string, email: string, password: string, role: UserRole) => void;
+  updateCurrentUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,11 +38,21 @@ const AuthProviderContent = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (email: string, password: string) => {
+  const login = (email: string, password: string, formType: 'user' | 'operator') => {
     const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
     const existingUser = users.find(u => u.email === email);
 
     if (existingUser && existingUser.password === password) {
+      // Role validation based on form type
+      if (formType === 'operator' && existingUser.role !== 'Operator') {
+        toast.error('Access denied. This user is not an Operator.');
+        return;
+      }
+      if (formType === 'user' && existingUser.role === 'Operator') {
+        toast.error('Access denied. Please use the Operator Login form.');
+        return;
+      }
+
       setUser(existingUser);
       setRole(existingUser.role);
       localStorage.setItem('currentUser', JSON.stringify(existingUser));
@@ -58,6 +69,12 @@ const AuthProviderContent = ({ children }: { children: ReactNode }) => {
     } else {
       toast.error('Login failed. Please check your email and password.');
     }
+  };
+
+  const updateCurrentUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    setRole(updatedUser.role);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
   };
 
   const register = (name: string, email: string, password: string, selectedRole: UserRole) => {
@@ -102,7 +119,7 @@ const AuthProviderContent = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, role, isLoading, login, logout, register, updateCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,7 +13,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 
 const MyProductsPage = () => {
-  const { user, role, login } = useAuth(); // Include login to update user in context
+  const { user, role, updateCurrentUser } = useAuth();
   const navigate = useNavigate();
 
   const [skus, setSkus] = useState<SKU[]>([]);
@@ -186,8 +186,7 @@ const MyProductsPage = () => {
     localStorage.setItem('users', JSON.stringify(updatedUsers));
     
     // Update the user in the AuthContext as well
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-    login(updatedUser.email, updatedUser.role); // Re-login to update context state
+    updateCurrentUser(updatedUser);
 
     showSuccess('Merchant settings saved successfully!');
     setIsSettingsDialogOpen(false);

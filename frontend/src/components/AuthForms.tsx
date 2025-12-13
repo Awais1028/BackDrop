@@ -17,8 +17,7 @@ export const LoginForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
-      login(email, password);
-      // The login function will handle navigation on success
+      login(email, password, 'user');
     } else {
       alert('Please enter your email and password.');
     }
@@ -150,7 +149,7 @@ export const OperatorLoginForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
-      login(email, password);
+      login(email, password, 'operator');
     } else {
       alert('Please enter your email and password.');
     }
