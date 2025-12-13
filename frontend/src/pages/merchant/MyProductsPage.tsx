@@ -131,33 +131,57 @@ const MyProductsPage = () => {
     // ... (settings logic remains the same)
   };
 
-  const SkuForm = ({ onSubmit, buttonText }: { onSubmit: (e: React.FormEvent) => void; buttonText: string }) => (
-    <form onSubmit={onSubmit} className="grid gap-4 py-4">
-      <div className="grid gap-2">
-        <Label htmlFor="skuTitle">Title</Label>
-        <Input id="skuTitle" value={skuTitle} onChange={(e) => setSkuTitle(e.target.value)} required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="skuPrice">Price ($)</Label>
-        <Input id="skuPrice" type="number" value={skuPrice} onChange={(e) => setSkuPrice(e.target.value === '' ? '' : Number(e.target.value))} required min="0" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="skuMargin">Margin (%)</Label>
-        <Input id="skuMargin" type="number" value={skuMargin} onChange={(e) => setSkuMargin(e.target.value === '' ? '' : Number(e.target.value))} required min="0" max="100" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="skuTags">Tags (comma-separated)</Label>
-        <Input id="skuTags" value={skuTags} onChange={(e) => setSkuTags(e.target.value)} placeholder="e.g., electronics, wearable" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="skuImageUrl">Image URL (Optional)</Label>
-        <Input id="skuImageUrl" value={skuImageUrl} onChange={(e) => setSkuImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
-      </div>
-      <DialogFooter>
-        <Button type="submit">{buttonText}</Button>
-      </DialogFooter>
-    </form>
-  );
+  const SkuForm = ({ onSubmit, buttonText }: { onSubmit: (e: React.FormEvent) => void; buttonText: string }) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+          showError("Image is too large. Please select a file smaller than 2MB.");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSkuImageUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    return (
+      <form onSubmit={onSubmit} className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="skuTitle">Title</Label>
+          <Input id="skuTitle" value={skuTitle} onChange={(e) => setSkuTitle(e.target.value)} required />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="skuPrice">Price ($)</Label>
+          <Input id="skuPrice" type="number" value={skuPrice} onChange={(e) => setSkuPrice(e.target.value === '' ? '' : Number(e.target.value))} required min="0" />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="skuMargin">Margin (%)</Label>
+          <Input id="skuMargin" type="number" value={skuMargin} onChange={(e) => setSkuMargin(e.target.value === '' ? '' : Number(e.target.value))} required min="0" max="100" />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="skuTags">Tags (comma-separated)</Label>
+          <Input id="skuTags" value={skuTags} onChange={(e) => setSkuTags(e.target.value)} placeholder="e.g., electronics, wearable" />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="skuImageFile">Upload Image (Max 2MB)</Label>
+          <Input id="skuImageFile" type="file" accept="image/*" onChange={handleImageChange} />
+          {skuImageUrl && (
+            <div className="mt-2 relative">
+              <img src={skuImageUrl} alt="Preview" className="w-24 h-24 object-cover rounded-md" />
+              <Button variant="ghost" size="sm" className="absolute top-0 right-0" onClick={() => setSkuImageUrl('')}>X</Button>
+              <p className="text-xs text-muted-foreground mt-1">Image stored locally in browser.</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button type="submit">{buttonText}</Button>
+        </DialogFooter>
+      </form>
+    );
+  };
 
   if (!user || role !== 'Merchant') return null;
 
