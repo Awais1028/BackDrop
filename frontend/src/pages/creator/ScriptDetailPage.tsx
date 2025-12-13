@@ -122,10 +122,10 @@ const ScriptDetailPage = () => {
     allSlots.push(newSlot);
 
     updateLocalStorageAndState(
-      JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+      JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[],
       allSlots,
-      JSON.parse(localStorage.getItem('bidReservations') || '[]'),
-      JSON.parse(localStorage.getItem('financingCommitments') || '[]')
+      JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[],
+      JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[]
     );
 
     showSuccess('Integration slot added successfully!');
@@ -163,9 +163,9 @@ const ScriptDetailPage = () => {
 
     updateLocalStorageAndState(
       updatedScripts,
-      JSON.parse(localStorage.getItem('integrationSlots') || '[]'),
-      JSON.parse(localStorage.getItem('bidReservations') || '[]'),
-      JSON.parse(localStorage.getItem('financingCommitments') || '[]')
+      JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[],
+      JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[],
+      JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[]
     );
 
     showSuccess('Script updated successfully!');
@@ -210,7 +210,7 @@ const ScriptDetailPage = () => {
       const filteredCommitments = allCommitments.filter(c => c.slotId !== slotId);
 
       updateLocalStorageAndState(
-        JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+        JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[],
         filteredSlots,
         filteredBids,
         filteredCommitments
@@ -234,13 +234,13 @@ const ScriptDetailPage = () => {
     const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
     const updatedBids = allBids.map(b =>
       b.id === bid.id ? { ...b, status: 'Accepted', lastModifiedDate: new Date().toISOString() } : b
-    );
+    ) as BidReservation[]; // Explicitly cast
 
     // 2. Update Slot status to 'Locked'
     const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
     const updatedSlots = allSlots.map(s =>
       s.id === bid.slotId ? { ...s, status: 'Locked', lastModifiedDate: new Date().toISOString() } : s
-    );
+    ) as IntegrationSlot[]; // Explicitly cast
 
     // 3. Create Financing Commitment (simplified for prototype)
     const newCommitment: FinancingCommitment = {
@@ -261,7 +261,7 @@ const ScriptDetailPage = () => {
     showSuccess(`Bid accepted! Deal memo generated: ${dealMemoLink}`);
 
     updateLocalStorageAndState(
-      JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+      JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[],
       updatedSlots,
       updatedBids,
       allCommitments
@@ -277,13 +277,13 @@ const ScriptDetailPage = () => {
     const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
     const updatedBids = allBids.map(b =>
       b.id === bid.id ? { ...b, status: 'Declined', lastModifiedDate: new Date().toISOString() } : b
-    );
+    ) as BidReservation[]; // Explicitly cast
 
     updateLocalStorageAndState(
-      JSON.parse(localStorage.getItem('projectScripts') || '[]'),
-      JSON.parse(localStorage.getItem('integrationSlots') || '[]'),
+      JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[],
+      JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[],
       updatedBids,
-      JSON.parse(localStorage.getItem('financingCommitments') || '[]')
+      JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[]
     );
     showSuccess('Bid declined.');
   };

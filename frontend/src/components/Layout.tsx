@@ -25,7 +25,7 @@ const navLinks: NavLink[] = [
   { to: '/operator/financing', label: 'Financing & Margin', icon: Settings, roles: ['Operator'] },
 ];
 
-const Layout = ({ children }: { children: ReactNode }) => {
+const Layout = ({ children }: { children?: ReactNode }) => { // Made children optional
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
