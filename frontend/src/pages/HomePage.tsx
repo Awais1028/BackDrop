@@ -9,7 +9,9 @@ const HomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('HomePage useEffect: user:', user, 'role:', role);
     if (user && role) {
+      console.log(`HomePage useEffect: User logged in as ${user.name} (${role}). Redirecting...`);
       // User is logged in, redirect to their specific dashboard
       switch (role) {
         case 'Creator':
@@ -24,10 +26,12 @@ const HomePage = () => {
           navigate('/creator/scripts', { replace: true }); // For now, redirect operator to creator scripts as a fallback
           break;
         default:
+          console.warn('HomePage useEffect: Unknown role, redirecting to login.');
           navigate('/login', { replace: true }); // Fallback to login if role is unexpected
           break;
       }
     } else {
+      console.log('HomePage useEffect: User not logged in. Redirecting to /login.');
       // User is not logged in, redirect to login page
       navigate('/login', { replace: true });
     }
