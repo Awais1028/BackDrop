@@ -45,6 +45,7 @@ export interface SKU {
   price: number;
   margin: number; // 0-100
   tags: string[];
+  imageUrl?: string;
   createdDate: string;
   lastModifiedDate: string;
 }

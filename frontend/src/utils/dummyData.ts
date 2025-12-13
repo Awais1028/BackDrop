@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.3'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '1.4'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -58,9 +58,9 @@ export const generateAndStoreDummyData = () => {
 
   // --- SKUs (for Merchant) ---
   const skus: SKU[] = [
-    { id: uuidv4(), merchantId: merchantUser.id, title: 'Organic Coffee Blend', price: 15.99, margin: 40, tags: ['coffee', 'organic'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
-    { id: uuidv4(), merchantId: merchantUser.id, title: 'Smartwatch X200', price: 299.99, margin: 25, tags: ['tech', 'wearable'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
-    { id: uuidv4(), merchantId: merchantUser.id, title: 'Hydrating Face Serum', price: 45.00, margin: 60, tags: ['skincare', 'beauty'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Organic Coffee Blend', price: 15.99, margin: 40, tags: ['coffee', 'organic'], imageUrl: 'https://placehold.co/600x400/5a3a2a/white?text=Coffee', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Smartwatch X200', price: 299.99, margin: 25, tags: ['tech', 'wearable'], imageUrl: 'https://placehold.co/600x400/333333/white?text=Smartwatch', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Hydrating Face Serum', price: 45.00, margin: 60, tags: ['skincare', 'beauty'], imageUrl: 'https://placehold.co/600x400/e0c0b8/white?text=Serum', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
     { id: uuidv4(), merchantId: merchantUser.id, title: 'Noise-Cancelling Headphones', price: 199.50, margin: 30, tags: ['tech', 'audio'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
   ];
   localStorage.setItem('skus', JSON.stringify(skus));

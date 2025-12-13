@@ -25,6 +25,7 @@ const MyProductsPage = () => {
   const [newSkuPrice, setNewSkuPrice] = useState<number | ''>('');
   const [newSkuMargin, setNewSkuMargin] = useState<number | ''>('');
   const [newSkuTags, setNewSkuTags] = useState('');
+  const [newSkuImageUrl, setNewSkuImageUrl] = useState('');
 
   // Merchant settings state
   const [minIntegrationFee, setMinIntegrationFee] = useState<number | ''>(user?.minIntegrationFee ?? '');
@@ -64,6 +65,7 @@ const MyProductsPage = () => {
       price: Number(newSkuPrice),
       margin: Number(newSkuMargin),
       tags: newSkuTags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+      imageUrl: newSkuImageUrl || undefined,
       createdDate: new Date().toISOString(),
       lastModifiedDate: new Date().toISOString(),
     };
@@ -80,6 +82,7 @@ const MyProductsPage = () => {
     setNewSkuPrice('');
     setNewSkuMargin('');
     setNewSkuTags('');
+    setNewSkuImageUrl('');
   };
 
   const handleDeleteSku = (skuId: string, skuTitle: string) => {
@@ -110,11 +113,11 @@ const MyProductsPage = () => {
       }
 
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      const requiredHeaders = ['title', 'price', 'margin', 'tags'];
+      const requiredHeaders = ['title', 'price', 'margin'];
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
       if (missingHeaders.length > 0) {
-        showError(`Missing required CSV headers: ${missingHeaders.join(', ')}. Please ensure your CSV has 'title', 'price', 'margin', 'tags'.`);
+        showError(`Missing required CSV headers: ${missingHeaders.join(', ')}. Please ensure your CSV has at least 'title', 'price', 'margin'.`);
         return;
       }
 
@@ -144,7 +147,8 @@ const MyProductsPage = () => {
           title: skuData.title,
           price: price,
           margin: margin,
-          tags: skuData.tags.split(';').map(tag => tag.trim()).filter(tag => tag !== ''), // Use semicolon for tags in CSV
+          tags: skuData.tags ? skuData.tags.split(';').map(tag => tag.trim()).filter(tag => tag !== '') : [],
+          imageUrl: skuData.imageurl || undefined,
           createdDate: new Date().toISOString(),
           lastModifiedDate: new Date().toISOString(),
         });
@@ -305,6 +309,15 @@ const MyProductsPage = () => {
                     placeholder="e.g., electronics, wearable, smart"
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="skuImageUrl">Image URL (Optional)</Label>
+                  <Input
+                    id="skuImageUrl"
+                    value={newSkuImageUrl}
+                    onChange={(e) => setNewSkuImageUrl(e.target.value)}
+                    placeholder="https://example.com/image.png"
+                  />
+                </div>
                 <DialogFooter>
                   <Button type="submit">Add SKU</Button>
                 </DialogFooter>
@@ -319,7 +332,7 @@ const MyProductsPage = () => {
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-blue-500" /> Bulk Upload SKUs
           </CardTitle>
-          <CardDescription>Upload your product catalog via a CSV file. Expected headers: `title, price, margin, tags` (tags separated by semicolon `;`).</CardDescription>
+          <CardDescription>Upload your product catalog via a CSV file. Expected headers: `title, price, margin, tags, imageUrl`. Tags should be separated by a semicolon (;).</CardDescription>
         </CardHeader>
         <CardContent>
           <Input type="file" accept=".csv" onChange={handleBulkUpload} />
@@ -336,7 +349,14 @@ const MyProductsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {skus.map((sku) => (
-            <Card key={sku.id}>
+            <Card key={sku.id} className="overflow-hidden">
+              {sku.imageUrl ? (
+                <img src={sku.imageUrl} alt={sku.title} className="w-full h-40 object-cover" />
+              ) : (
+                <div className="w-full h-40 bg-muted flex items-center justify-center">
+                  <Package className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
               <CardHeader>
                 <CardTitle>{sku.title}</CardTitle>
                 <CardDescription>Price: ${sku.price.toFixed(2)} | Margin: {sku.margin}%</CardDescription>
