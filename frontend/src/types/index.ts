@@ -21,6 +21,8 @@ export interface ProjectScript {
   docLink: string;
   productionWindow: string;
   budgetTarget?: number;
+  genre?: 'Comedy' | 'Sci-Fi' | 'Drama' | 'Thriller' | 'Action';
+  demographics?: string;
   createdDate: string;
   lastModifiedDate: string;
 }

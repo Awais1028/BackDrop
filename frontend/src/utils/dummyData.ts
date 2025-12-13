@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.6'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '1.7'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -42,13 +42,14 @@ export const generateAndStoreDummyData = () => {
   localStorage.setItem('users', JSON.stringify(users));
 
   // --- Project Scripts (for Creator) ---
-  const script1: ProjectScript = { id: uuidv4(), title: 'The Last Coffee Shop', creatorId: creatorUser.id, docLink: 'https://example.com/script1.pdf', productionWindow: 'Q1 2025', budgetTarget: 150000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const script3: ProjectScript = { id: uuidv4(), title: 'Untitled Sci-Fi Project', creatorId: creatorUser.id, docLink: 'https://example.com/script3.pdf', productionWindow: 'Q4 2025', budgetTarget: 500000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script1: ProjectScript = { id: uuidv4(), title: 'The Last Coffee Shop', creatorId: creatorUser.id, docLink: 'https://example.com/script1.pdf', productionWindow: 'Q1 2025', budgetTarget: 150000, genre: 'Comedy', demographics: '18-34 All', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, genre: 'Thriller', demographics: '25-49 Female', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script3: ProjectScript = { id: uuidv4(), title: 'Untitled Sci-Fi Project', creatorId: creatorUser.id, docLink: 'https://example.com/script3.pdf', productionWindow: 'Q4 2025', budgetTarget: 500000, genre: 'Sci-Fi', demographics: '18-34 Male', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const projectScripts: ProjectScript[] = [script1, script2, script3];
 
   // --- Bulk Scripts for Pagination Demo ---
   const bulkScripts: ProjectScript[] = [];
+  const genres: ProjectScript['genre'][] = ['Comedy', 'Sci-Fi', 'Drama', 'Thriller', 'Action'];
   for (let i = 1; i <= 100; i++) {
     bulkScripts.push({
       id: uuidv4(),
@@ -57,6 +58,8 @@ export const generateAndStoreDummyData = () => {
       docLink: `https://example.com/bulk-script-${i}.pdf`,
       productionWindow: `Q${(i % 4) + 1} 2026`,
       budgetTarget: 50000 + (i * 1000),
+      genre: genres[i % genres.length],
+      demographics: 'All Audiences',
       createdDate: new Date(new Date().getTime() - (i * 1000 * 60 * 60 * 24)).toISOString(), // Stagger creation dates
       lastModifiedDate: new Date().toISOString(),
     });
