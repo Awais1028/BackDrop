@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.2'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '1.3'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -22,19 +22,22 @@ export const generateAndStoreDummyData = () => {
   localStorage.removeItem('financingCommitments');
   localStorage.removeItem('currentUser');
 
+  const defaultPassword = 'password123';
+
   // --- Users ---
-  const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
-  const advertiserUser: User = { id: uuidv4(), email: 'advertiser@example.com', name: 'Bob Advertiser', role: 'Advertiser' };
+  const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator', password: defaultPassword };
+  const advertiserUser: User = { id: uuidv4(), email: 'advertiser@example.com', name: 'Bob Advertiser', role: 'Advertiser', password: defaultPassword };
   const merchantUser: User = { 
     id: uuidv4(), 
     email: 'merchant@example.com', 
     name: 'Charlie Merchant', 
     role: 'Merchant',
+    password: defaultPassword,
     minIntegrationFee: 1000,
     eligibilityRules: '{"categories": ["skincare", "electronics"], "min_margin": 20}',
     suitabilityRules: '{"exclude_genres": ["horror", "violence"]}',
   };
-  const operatorUser: User = { id: uuidv4(), email: 'operator@example.com', name: 'Dana Operator', role: 'Operator' };
+  const operatorUser: User = { id: uuidv4(), email: 'operator@example.com', name: 'Dana Operator', role: 'Operator', password: defaultPassword };
   const users: User[] = [creatorUser, advertiserUser, merchantUser, operatorUser];
   localStorage.setItem('users', JSON.stringify(users));
 
@@ -79,7 +82,7 @@ export const generateAndStoreDummyData = () => {
   localStorage.setItem('financingCommitments', JSON.stringify(commitments));
 
   // --- Final Toast Notification ---
-  toast.success('Expanded dummy data has been generated!');
+  toast.info('Dummy data has been regenerated with passwords. Default password is "password123".');
   
   // --- Set Version ---
   localStorage.setItem('dummyDataVersion', DUMMY_DATA_VERSION);

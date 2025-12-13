@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -29,39 +29,33 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<AuthPage />} />
             <Route path="/register" element={<AuthPage />} />
 
-            <Route element={<Layout />}>
-              <Route path="/" element={<HomePage />} />
-              
-              {/* Protected Creator Routes */}
-              <Route element={<ProtectedRoute allowedRoles={["Creator"]} />}>
+            {/* Protected Routes inside the App Layout */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                {/* Creator Routes */}
                 <Route path="/creator/scripts" element={<MyScriptsPage />} />
                 <Route path="/creator/scripts/:scriptId" element={<ScriptDetailPage />} />
                 <Route path="/creator/dashboard" element={<FinancingDashboardPage />} />
-              </Route>
 
-              {/* Protected Shared Buyer (Advertiser & Merchant) Routes */}
-              <Route element={<ProtectedRoute allowedRoles={["Advertiser", "Merchant"]} />}>
+                {/* Buyer (Advertiser & Merchant) Routes */}
                 <Route path="/discover" element={<DiscoverOpportunitiesPage />} />
                 <Route path="/buyer/bids" element={<MyBidsReservationsPage />} />
-              </Route>
 
-              {/* Protected Merchant-Only Routes */}
-              <Route element={<ProtectedRoute allowedRoles={["Merchant"]} />}>
+                {/* Merchant-Only Routes */}
                 <Route path="/merchant/products" element={<MyProductsPage />} />
-              </Route>
 
-              {/* Protected Operator Routes */}
-              <Route element={<ProtectedRoute allowedRoles={["Operator"]} />}>
+                {/* Operator Routes */}
                 <Route path="/operator/inventory" element={<InventoryPage />} />
                 <Route path="/operator/workflow" element={<WorkflowMonitoringPage />} />
                 <Route path="/operator/financing" element={<FinancingPage />} />
               </Route>
             </Route>
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

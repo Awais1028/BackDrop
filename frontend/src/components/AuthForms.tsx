@@ -10,17 +10,17 @@ import { UserRole } from '@/types';
 
 export const LoginForm = () => {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole | ''>('');
+  const [password, setPassword] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && role) {
-      login(email, role as UserRole);
-      navigate('/'); // Redirect to home or dashboard after login
+    if (email && password) {
+      login(email, password);
+      // The login function will handle navigation on success
     } else {
-      alert('Please enter email and select a role.');
+      alert('Please enter your email and password.');
     }
   };
 
@@ -28,7 +28,7 @@ export const LoginForm = () => {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl">Login</CardTitle>
-        <CardDescription>Enter your email and role to access your console.</CardDescription>
+        <CardDescription>Enter your email and password to access your console.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -44,18 +44,14 @@ export const LoginForm = () => {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Creator">Creator</SelectItem>
-                <SelectItem value="Advertiser">Advertiser</SelectItem>
-                <SelectItem value="Merchant">Merchant</SelectItem>
-                <SelectItem value="Operator">Operator</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" className="w-full">
             Login
@@ -69,15 +65,16 @@ export const LoginForm = () => {
 export const RegisterForm = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole | ''>('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name && email && role) {
-      register(name, email, role as UserRole);
-      navigate('/'); // Redirect to home or dashboard after registration
+    if (name && email && password && role) {
+      register(name, email, password, role as UserRole);
+      // The register function will handle navigation on success
     } else {
       alert('Please fill in all fields.');
     }
@@ -114,7 +111,17 @@ export const RegisterForm = () => {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="role">Role</Label>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="role">I am a...</Label>
             <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
               <SelectTrigger id="role">
                 <SelectValue placeholder="Select your role" />
@@ -123,7 +130,6 @@ export const RegisterForm = () => {
                 <SelectItem value="Creator">Creator</SelectItem>
                 <SelectItem value="Advertiser">Advertiser</SelectItem>
                 <SelectItem value="Merchant">Merchant</SelectItem>
-                <SelectItem value="Operator">Operator</SelectItem>
               </SelectContent>
             </Select>
           </div>

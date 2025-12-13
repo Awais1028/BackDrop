@@ -5,6 +5,9 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  // NOTE: Storing plain text passwords in a real app is a major security risk.
+  // This is done here only for the purpose of this frontend-only prototype.
+  password?: string; 
   // Merchant-specific fields
   minIntegrationFee?: number;
   eligibilityRules?: string; // JSON string or text for rules

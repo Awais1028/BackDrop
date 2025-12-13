@@ -1,81 +1,71 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import { generateAndStoreDummyData } from '@/utils/dummyData'; // Import the dummy data generator
-import { toast } from 'sonner'; // Import toast for notifications
+import { generateAndStoreDummyData } from '@/utils/dummyData';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
-  isLoading: boolean; // New loading state
-  login: (email: string, role: UserRole) => void;
+  isLoading: boolean;
+  login: (email: string, password: string) => void;
   logout: () => void;
-  register: (name: string, email: string, role: UserRole) => void;
+  register: (name: string, email: string, password: string, role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+const AuthProviderContent = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Initialize as true
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('AuthContext useEffect: Initializing authentication state...');
-    
-    // 1. Ensure dummy data is generated
     generateAndStoreDummyData();
-
-    // 2. Attempt to load current user from localStorage after dummy data is ensured
     const storedUser = localStorage.getItem('currentUser');
-    console.log('AuthContext useEffect: Attempting to load currentUser from localStorage. Value:', storedUser);
-
     if (storedUser) {
       try {
         const parsedUser: User = JSON.parse(storedUser);
         setUser(parsedUser);
         setRole(parsedUser.role);
-        console.log(`AuthContext useEffect: Loaded current user: ${parsedUser.email} (${parsedUser.role}). User state set.`);
       } catch (error) {
-        console.error('AuthContext useEffect: Error parsing currentUser from localStorage:', error);
-        localStorage.removeItem('currentUser'); // Clear invalid current user
-        console.log('AuthContext useEffect: Invalid currentUser removed from localStorage.');
+        localStorage.removeItem('currentUser');
       }
-    } else {
-      console.log('AuthContext useEffect: No current user found in localStorage.');
     }
-    
-    setIsLoading(false); // Set loading to false once all initial checks are done
-    console.log('AuthContext useEffect: Initial authentication checks complete. isLoading set to false.');
-    console.log('AuthContext useEffect: Current user state after initial load:', user, 'Role:', role);
-  }, []); // Empty dependency array means this runs once on mount
+    setIsLoading(false);
+  }, []);
 
-  const login = (email: string, selectedRole: UserRole) => {
-    console.log(`AuthContext login: Attempting login for email: ${email}, role: ${selectedRole}`);
+  const login = (email: string, password: string) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const existingUser = users.find(u => u.email === email && u.role === selectedRole);
+    const existingUser = users.find(u => u.email === email);
 
-    if (existingUser) {
+    if (existingUser && existingUser.password === password) {
       setUser(existingUser);
       setRole(existingUser.role);
       localStorage.setItem('currentUser', JSON.stringify(existingUser));
-      console.log(`AuthContext login: User ${existingUser.name} (${existingUser.role}) logged in. currentUser set in localStorage.`);
       toast.success(`Welcome back, ${existingUser.name}!`);
+      
+      // Redirect based on role
+      switch (existingUser.role) {
+        case 'Creator': navigate('/creator/scripts'); break;
+        case 'Advertiser':
+        case 'Merchant': navigate('/discover'); break;
+        case 'Operator': navigate('/operator/inventory'); break;
+        default: navigate('/'); break;
+      }
     } else {
-      console.error('AuthContext login: Login failed: User not found or role mismatch.');
-      toast.error('Login failed. Please check your email and role. If this is your first time, try refreshing the page and logging in with creator@example.com.');
+      toast.error('Login failed. Please check your email and password.');
     }
-    console.log('AuthContext login: User state after login attempt:', user, 'Role:', role);
   };
 
-  const register = (name: string, email: string, selectedRole: UserRole) => {
-    console.log(`AuthContext register: Attempting registration for name: ${name}, email: ${email}, role: ${selectedRole}`);
+  const register = (name: string, email: string, password: string, selectedRole: UserRole) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
     const existingUser = users.find(u => u.email === email);
 
     if (existingUser) {
       toast.error('User with this email already exists. Please log in.');
-      console.warn('AuthContext register: Registration failed, email already exists.');
       return;
     }
 
@@ -83,6 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       id: uuidv4(),
       name,
       email,
+      password,
       role: selectedRole,
     };
 
@@ -91,18 +82,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(newUser);
     setRole(newUser.role);
     localStorage.setItem('currentUser', JSON.stringify(newUser));
-    console.log(`AuthContext register: User ${newUser.name} (${newUser.role}) registered and logged in. currentUser set in localStorage.`);
     toast.success(`Account created for ${newUser.name}!`);
-    console.log('AuthContext register: User state after registration:', user, 'Role:', role);
+    
+    // Redirect based on role
+    switch (newUser.role) {
+      case 'Creator': navigate('/creator/scripts'); break;
+      case 'Advertiser':
+      case 'Merchant': navigate('/discover'); break;
+      default: navigate('/'); break;
+    }
   };
 
   const logout = () => {
-    console.log('AuthContext logout: Attempting logout.');
     setUser(null);
     setRole(null);
     localStorage.removeItem('currentUser');
-    console.log('AuthContext logout: User logged out. currentUser removed from localStorage. User state cleared.');
     toast.info('You have been logged out.');
+    navigate('/login');
   };
 
   return (
@@ -111,6 +107,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => (
+  <AuthProviderContent>{children}</AuthProviderContent>
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
