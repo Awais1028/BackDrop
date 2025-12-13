@@ -1,5 +1,5 @@
-import React, { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -25,7 +25,7 @@ const navLinks: NavLink[] = [
   { to: '/operator/financing', label: 'Financing & Margin', icon: Settings, roles: ['Operator'] },
 ];
 
-const Layout = ({ children }: { children?: ReactNode }) => {
+const Layout = () => {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -135,7 +135,7 @@ const Layout = ({ children }: { children?: ReactNode }) => {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
