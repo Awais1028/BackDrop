@@ -1,6 +1,6 @@
 ---
 title: Product Requirements Document
-app: backdrop
+app: BackDrop
 created: 2025-12-13T10:00:44.529Z
 version: 1
 source: Deep Mode PRD Generation
@@ -175,7 +175,7 @@ source: Deep Mode PRD Generation
         *   **Delete:** User can cancel an unaccepted bid/reservation.
     *   **Acceptance Criteria:**
         *   - [ ] Given an available slot, when an Advertiser/Merchant places a bid/reservation, then it is recorded and visible to the Creator.
-        *   - [ ] Users can specify their objective and proposed flight window when placing a bid/reservation.
+        *      - [ ] Users can specify their objective and proposed flight window when placing a bid/reservation.
         *   - [ ] Users can view the status of their submitted bids/reservations.
 
 *   **FR-010: Comment/Approve Proposed Integrations (Buyer Side)**
@@ -524,9 +524,9 @@ source: Deep Mode PRD Generation
     *   **Operator:** Has full view access to all marketplace data (scripts, slots, bids, approvals, commitments, audit logs). Can manage slot visibility.
 *   **Data Rules:**
     *   **Project/Script:** `title` (required, unique per creator), `doc_link` (required), `budget_target` (optional, numeric).
-    *   **Integration Slot:** `project_id` (required, foreign key), `scene_ref` (required), `description` (required), `pricing_floor` (required, numeric, >=0), `modality` (required, enum: Private Auction, PG/Reservation).
+    *   **Integration Slot:** `project_id` (required, foreign key), `scene_ref` (required), `description` (required), `constraints` (text/JSON for rules), `pricing_floor` (required, numeric, >=0), `modality` (required, enum: Private Auction, PG/Reservation).
     *   **SKU:** `merchant_id` (required, foreign key), `title` (required), `price` (required, numeric, >0), `margin` (required, numeric, 0-100).
-    *   **Bid/Reservation:** `counterparty_id` (required, foreign key), `slot_id` (required, foreign key), `objective` (required, enum: Reach, Conversions), `pricing_model` (required, enum: Fixed, Rev-Share, Hybrid), `amount/terms` (required, depends on model), `flight_window` (required, text/date range), `status` (enum: Pending, Accepted, Declined, Committed, Cancelled).
+    *   **Bid/Reservation:** `counterparty_id` (required, foreign key), `slot_id` (required, foreign key), `objective` (required, enum: Reach, Conversions), `pricing_model` (enum: Fixed, Rev-Share, Hybrid), `amount/terms` (required, depends on model), `flight_window` (required, text/date range), `status` (enum: Pending, Accepted, Declined, Committed, Cancelled).
     *   **Approval:** `slot_id` (required), `counterparty_id` (required), `decision` (enum: Approved, Declined), `timestamp` (required).
     *   **Deal Memo:** `slot_id` (required), `pdf_link` (required).
     *   **Financing Commitment:** `slot_id` (required), `counterparty_id` (required), `committed_amount` (required, numeric, >0).
@@ -734,7 +734,7 @@ The core workflow from script upload to deal memo generation and financing view 
     *   **Description:** Automated management of content rights and clearances.
     *   **Reason for Deferral:** Adds significant legal and workflow complexity not critical for the core marketplace transaction.
 *   **DF-007: Real Money Movement**
-    *   **Description:** Direct processing of payments, deposits, and financial transfers within the platform.
+    *   **Description:** Commitments are tracked, but actual financial transactions are out of scope.
     *   **Reason for Deferral:** The MVP tracks commitments; integrating real money movement adds significant regulatory, security, and technical complexity (e.g., PCI compliance, escrow services).
 *   **DF-008: Open Auction Across Multiple Creators with Pacing/Forecast Cards**
     *   **Description:** An auction mechanism where multiple creators' slots are pooled for bidding, with tools for pacing and forecasting.

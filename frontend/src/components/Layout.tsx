@@ -42,7 +42,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
       <aside className="hidden md:flex flex-col w-64 border-r bg-sidebar text-sidebar-foreground p-4">
         <div className="flex items-center justify-between h-16 px-4">
           <Link to="/" className="text-xl font-bold text-sidebar-primary-foreground">
-            backdrop
+            BackDrop
           </Link>
         </div>
         <nav className="flex-1 mt-6">
@@ -86,7 +86,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col bg-sidebar text-sidebar-foreground">
               <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-sidebar-primary-foreground h-16 px-4">
-                <span>backdrop</span>
+                <span>BackDrop</span>
               </Link>
               <nav className="grid gap-2 text-lg font-medium mt-6">
                 {filteredNavLinks.map((link) => (
@@ -114,7 +114,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             </SheetContent>
           </Sheet>
           <div className="flex-1 text-lg font-medium md:hidden">
-            backdrop
+            BackDrop
           </div>
           <div className="ml-auto flex items-center gap-4">
             {user ? (
