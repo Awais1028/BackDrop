@@ -70,6 +70,8 @@ export interface BidReservation {
   flightWindow: string; // text/date range
   status: "Pending" | "Accepted" | "AwaitingFinalApproval" | "Declined" | "Committed" | "Cancelled";
   comments: Comment[];
+  creatorFinalApproval: boolean;
+  buyerFinalApproval: boolean;
   createdDate: string;
   lastModifiedDate: string;
 }

@@ -82,7 +82,7 @@ const MyBidsReservationsPage = () => {
           )}
           {bid.status === 'AwaitingFinalApproval' && (
             <div className="mt-4">
-              <Link to={`/buyer/deals/${bid.id}`} className="w-full">
+              <Link to={`/deals/${bid.id}`} className="w-full">
                 <Button className="w-full"><MessageSquare className="h-4 w-4 mr-2" /> Review & Approve</Button>
               </Link>
               <p className="text-xs text-center mt-2 text-muted-foreground">Finalize the agreement with the creator.</p>

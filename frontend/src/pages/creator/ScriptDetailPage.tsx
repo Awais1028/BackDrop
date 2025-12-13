@@ -133,7 +133,14 @@ const ScriptDetailPage = () => {
 
     const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
     const updatedBids = allBids.map(b =>
-      b.id === bid.id ? { ...b, status: 'AwaitingFinalApproval' as const, comments: [initialComment], lastModifiedDate: new Date().toISOString() } : b
+      b.id === bid.id ? { 
+        ...b, 
+        status: 'AwaitingFinalApproval' as const, 
+        comments: [initialComment], 
+        creatorFinalApproval: false, // Initialize flags
+        buyerFinalApproval: false,
+        lastModifiedDate: new Date().toISOString() 
+      } : b
     );
 
     const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
@@ -250,7 +257,7 @@ const ScriptDetailPage = () => {
                           </div>
                         )}
                         {bid.status === 'AwaitingFinalApproval' && (
-                           <Link to={`/buyer/deals/${bid.id}`}>
+                           <Link to={`/deals/${bid.id}`}>
                              <Button variant="outline" size="sm" className="mt-2 w-full"><MessageSquare className="mr-2 h-4 w-4" /> View Discussion</Button>
                            </Link>
                         )}

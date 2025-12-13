@@ -38,6 +38,9 @@ const App = () => (
             {/* Protected Routes inside the App Layout */}
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
+                {/* Shared Routes */}
+                <Route path="/deals/:bidId" element={<DealApprovalPage />} />
+
                 {/* Creator Routes */}
                 <Route path="/creator/scripts" element={<MyScriptsPage />} />
                 <Route path="/creator/scripts/:scriptId" element={<ScriptDetailPage />} />
@@ -46,8 +49,7 @@ const App = () => (
                 {/* Buyer (Advertiser & Merchant) Routes */}
                 <Route path="/discover" element={<DiscoverOpportunitiesPage />} />
                 <Route path="/buyer/bids" element={<MyBidsReservationsPage />} />
-                <Route path="/buyer/deals/:bidId" element={<DealApprovalPage />} />
-
+                
                 {/* Merchant-Only Routes */}
                 <Route path="/merchant/products" element={<MyProductsPage />} />
 
