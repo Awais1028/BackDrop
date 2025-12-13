@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { generateAndStoreDummyData } from '@/utils/dummyData'; // Import the dummy data generator
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +18,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
+    // Generate dummy data if no users exist in local storage
+    const storedUsers = localStorage.getItem('users');
+    if (!storedUsers || JSON.parse(storedUsers).length === 0) {
+      generateAndStoreDummyData();
+    }
+
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       const parsedUser: User = JSON.parse(storedUser);
@@ -26,8 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (email: string, selectedRole: UserRole) => {
-    // In a real app, this would involve API calls to verify credentials
-    // For this prototype, we'll simulate by checking if a user with this email and role exists
     const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
     const existingUser = users.find(u => u.email === email && u.role === selectedRole);
 
@@ -38,8 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log(`User ${existingUser.name} (${existingUser.role}) logged in.`);
     } else {
       console.error('Login failed: User not found or role mismatch.');
-      // For prototype, if not found, we can auto-register or show an error
-      alert('Login failed. Please register or check your credentials/role.');
+      alert('Login failed. Please register or check your credentials/role. If this is your first time, try refreshing the page to load dummy data.');
     }
   };
 
