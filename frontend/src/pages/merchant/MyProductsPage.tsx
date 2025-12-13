@@ -349,7 +349,7 @@ const MyProductsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {skus.map((sku) => (
             <Card key={sku.id}>
-              <CardContent className="p-4 flex items-start gap-4">
+              <CardContent className="p-4 flex flex-col sm:flex-row items-start gap-4">
                 <div className="flex-1">
                   <CardTitle className="mb-1 text-lg">{sku.title}</CardTitle>
                   <CardDescription>Price: ${sku.price.toFixed(2)} | Margin: {sku.margin}%</CardDescription>
@@ -365,7 +365,7 @@ const MyProductsPage = () => {
                     </Button>
                   </div>
                 </div>
-                <div className="w-28 h-28 md:w-32 md:h-32 flex-shrink-0">
+                <div className="w-full aspect-square sm:w-28 md:w-32 flex-shrink-0">
                   {sku.imageUrl ? (
                     <Dialog>
                       <DialogTrigger asChild>
