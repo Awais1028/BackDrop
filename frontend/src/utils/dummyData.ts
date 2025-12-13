@@ -1,21 +1,45 @@
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserRole, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment } from '@/types';
+import { toast } from 'sonner'; // Import toast for notifications
 
 export const generateAndStoreDummyData = () => {
   console.log('generateAndStoreDummyData: Attempting to generate dummy data.');
+  
+  // Check if essential dummy data already exists
+  const storedUsers = localStorage.getItem('users');
+  const storedScripts = localStorage.getItem('projectScripts');
+  const storedSlots = localStorage.getItem('integrationSlots');
+  const storedBids = localStorage.getItem('bidReservations');
+  const storedCommitments = localStorage.getItem('financingCommitments');
+
+  let shouldGenerate = false;
+
   try {
-    const storedUsers = localStorage.getItem('users');
-    if (storedUsers) {
-      const parsedUsers = JSON.parse(storedUsers);
-      if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
-        console.log('generateAndStoreDummyData: Dummy data already exists (checked inside function). Skipping generation.');
-        return;
-      }
-    }
+    if (!storedUsers || JSON.parse(storedUsers).length === 0) shouldGenerate = true;
+    if (!storedScripts || JSON.parse(storedScripts).length === 0) shouldGenerate = true;
+    if (!storedSlots || JSON.parse(storedSlots).length === 0) shouldGenerate = true;
+    if (!storedBids || JSON.parse(storedBids).length === 0) shouldGenerate = true;
+    if (!storedCommitments || JSON.parse(storedCommitments).length === 0) shouldGenerate = true;
   } catch (error) {
-    console.warn('generateAndStoreDummyData: Error checking existing users, proceeding with generation:', error);
-    // If parsing fails here, we still want to try generating new data.
+    console.warn('generateAndStoreDummyData: Error parsing stored data, forcing regeneration:', error);
+    shouldGenerate = true; // Force generation if parsing fails
   }
+
+  if (!shouldGenerate) {
+    console.log('generateAndStoreDummyData: All essential dummy data already exists. Skipping generation.');
+    return;
+  }
+
+  console.log('generateAndStoreDummyData: Dummy data is missing or incomplete. Generating new dummy data.');
+
+  // Clear existing data to ensure a clean slate for regeneration
+  localStorage.removeItem('users');
+  localStorage.removeItem('projectScripts');
+  localStorage.removeItem('integrationSlots');
+  localStorage.removeItem('skus');
+  localStorage.removeItem('bidReservations');
+  localStorage.removeItem('financingCommitments');
+  localStorage.removeItem('currentUser'); // Also clear current user to avoid conflicts
 
   // --- Users ---
   const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
@@ -209,4 +233,6 @@ export const generateAndStoreDummyData = () => {
 
   console.log('generateAndStoreDummyData: Dummy data generation complete. You can now log in with:');
   users.forEach(u => console.log(`- Email: ${u.email}, Role: ${u.role}`));
+
+  toast.success('Dummy data generated! Please log in with creator@example.com (Role: Creator) to see pre-filled content.');
 };

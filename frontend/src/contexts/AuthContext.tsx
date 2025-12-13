@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, UserRole } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { generateAndStoreDummyData } from '@/utils/dummyData'; // Import the dummy data generator
+import { toast } from 'sonner'; // Import toast for notifications
 
 interface AuthContextType {
   user: User | null;
@@ -18,30 +19,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
-    console.log('AuthContext useEffect: Checking for users in localStorage...');
-    let usersExist = false;
-    try {
-      const storedUsers = localStorage.getItem('users');
-      if (storedUsers) {
-        const parsedUsers = JSON.parse(storedUsers);
-        if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
-          usersExist = true;
-        }
-      }
-    } catch (error) {
-      console.error('AuthContext useEffect: Error parsing users from localStorage, treating as empty:', error);
-      // If parsing fails here, treat as if no users exist, so dummy data will be generated
-      usersExist = false;
-      localStorage.removeItem('users'); // Clear potentially malformed data
-    }
-
-    if (!usersExist) {
-      console.log('AuthContext useEffect: No valid users found, generating dummy data.');
-      generateAndStoreDummyData();
-      console.log('AuthContext useEffect: Dummy data generation function called.');
-    } else {
-      console.log('AuthContext useEffect: Users found in localStorage. Skipping dummy data generation.');
-    }
+    console.log('AuthContext useEffect: Initializing...');
+    
+    // Always attempt to generate dummy data if any essential part is missing
+    generateAndStoreDummyData();
 
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
@@ -68,9 +49,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRole(existingUser.role);
       localStorage.setItem('currentUser', JSON.stringify(existingUser));
       console.log(`AuthContext login: User ${existingUser.name} (${existingUser.role}) logged in.`);
+      toast.success(`Welcome back, ${existingUser.name}!`);
     } else {
       console.error('AuthContext login: Login failed: User not found or role mismatch.');
-      alert('Login failed. Please register or check your credentials/role. If this is your first time, try refreshing the page to load dummy data.');
+      toast.error('Login failed. Please check your email and role. If this is your first time, try refreshing the page and logging in with creator@example.com.');
     }
   };
 
@@ -79,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const existingUser = users.find(u => u.email === email);
 
     if (existingUser) {
-      alert('User with this email already exists. Please log in.');
+      toast.error('User with this email already exists. Please log in.');
       return;
     }
 
@@ -96,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(newUser.role);
     localStorage.setItem('currentUser', JSON.stringify(newUser));
     console.log(`AuthContext register: User ${newUser.name} (${newUser.role}) registered and logged in.`);
+    toast.success(`Account created for ${newUser.name}!`);
   };
 
   const logout = () => {
@@ -103,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
     localStorage.removeItem('currentUser');
     console.log('AuthContext logout: User logged out.');
+    toast.info('You have been logged out.');
   };
 
   return (
