@@ -19,13 +19,13 @@ const navLinks: NavLink[] = [
   { to: '/creator/dashboard', label: 'Financing Dashboard', icon: Settings, roles: ['Creator'] },
   { to: '/discover', label: 'Discover Opportunities', icon: Search, roles: ['Advertiser', 'Merchant'] },
   { to: '/buyer/bids', label: 'My Bids/Reservations', icon: ShoppingBag, roles: ['Advertiser', 'Merchant'] },
-  { to: '/merchant/products', label: 'My Products', icon: ShoppingBag, roles: ['Merchant'] },
+  { to: '/merchant/products', label: 'My Products', icon: ShoppingBag, roles: ['Merchant'] }, // Placeholder for future implementation
   { to: '/operator/inventory', label: 'Inventory', icon: Users, roles: ['Operator'] },
   { to: '/operator/workflow', label: 'Workflow Monitoring', icon: Settings, roles: ['Operator'] },
   { to: '/operator/financing', label: 'Financing & Margin', icon: Settings, roles: ['Operator'] },
 ];
 
-const Layout = ({ children }: { children?: ReactNode }) => { // Made children optional
+const Layout = ({ children }: { children?: ReactNode }) => {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -34,8 +34,8 @@ const Layout = ({ children }: { children?: ReactNode }) => { // Made children op
     navigate('/login');
   };
 
-  // Filter nav links to only show Creator-specific links for now
-  const filteredNavLinks = navLinks.filter(link => role === 'Creator' && link.roles.includes('Creator'));
+  // Filter nav links based on the current user's role
+  const filteredNavLinks = navLinks.filter(link => link.roles.includes(role || ''));
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">

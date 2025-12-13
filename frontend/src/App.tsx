@@ -12,8 +12,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MyScriptsPage from "./pages/creator/MyScriptsPage";
 import ScriptDetailPage from "./pages/creator/ScriptDetailPage";
 import FinancingDashboardPage from "./pages/creator/FinancingDashboardPage";
-// import DiscoverOpportunitiesPage from "./pages/buyer/DiscoverOpportunitiesPage";
-// import MyBidsReservationsPage from "./pages/buyer/MyBidsReservationsPage";
+import DiscoverOpportunitiesPage from "./pages/buyer/DiscoverOpportunitiesPage";
+import MyBidsReservationsPage from "./pages/buyer/MyBidsReservationsPage";
 
 const queryClient = new QueryClient();
 
@@ -38,18 +38,18 @@ const App = () => (
                 <Route path="/creator/dashboard" element={<FinancingDashboardPage />} />
               </Route>
 
-              {/* Protected Advertiser Routes (Commented out for Creator-only focus) */}
-              {/* <Route element={<ProtectedRoute allowedRoles={["Advertiser"]} />}>
+              {/* Protected Advertiser Routes */}
+              <Route element={<ProtectedRoute allowedRoles={["Advertiser"]} />}>
                 <Route path="/discover" element={<DiscoverOpportunitiesPage />} />
                 <Route path="/buyer/bids" element={<MyBidsReservationsPage />} />
-              </Route> */}
+              </Route>
 
-              {/* Protected Merchant Routes (Commented out for Creator-only focus) */}
-              {/* <Route element={<ProtectedRoute allowedRoles={["Merchant"]} />}>
+              {/* Protected Merchant Routes */}
+              <Route element={<ProtectedRoute allowedRoles={["Merchant"]} />}>
                 <Route path="/discover" element={<DiscoverOpportunitiesPage />} />
                 <Route path="/buyer/bids" element={<MyBidsReservationsPage />} />
-                <Route path="/merchant/products" element={<MyProductsPage />} />
-              </Route> */}
+                {/* <Route path="/merchant/products" element={<MyProductsPage />} /> */} {/* This page is not yet implemented */}
+              </Route>
 
               {/* Protected Operator Routes (Commented out for Creator-only focus) */}
               {/* <Route element={<ProtectedRoute allowedRoles={["Operator"]} />}>
