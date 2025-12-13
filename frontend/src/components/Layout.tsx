@@ -34,7 +34,8 @@ const Layout = ({ children }: { children: ReactNode }) => {
     navigate('/login');
   };
 
-  const filteredNavLinks = navLinks.filter(link => role && link.roles.includes(role));
+  // Filter nav links to only show Creator-specific links for now
+  const filteredNavLinks = navLinks.filter(link => role === 'Creator' && link.roles.includes('Creator'));
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">

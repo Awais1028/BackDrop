@@ -5,33 +5,6 @@ import { toast } from 'sonner'; // Import toast for notifications
 export const generateAndStoreDummyData = () => {
   console.log('generateAndStoreDummyData: Attempting to generate dummy data.');
   
-  // Check if essential dummy data already exists
-  const storedUsers = localStorage.getItem('users');
-  const storedScripts = localStorage.getItem('projectScripts');
-  const storedSlots = localStorage.getItem('integrationSlots');
-  const storedBids = localStorage.getItem('bidReservations');
-  const storedCommitments = localStorage.getItem('financingCommitments');
-
-  let shouldGenerate = false;
-
-  try {
-    if (!storedUsers || JSON.parse(storedUsers).length === 0) shouldGenerate = true;
-    if (!storedScripts || JSON.parse(storedScripts).length === 0) shouldGenerate = true;
-    if (!storedSlots || JSON.parse(storedSlots).length === 0) shouldGenerate = true;
-    if (!storedBids || JSON.parse(storedBids).length === 0) shouldGenerate = true;
-    if (!storedCommitments || JSON.parse(storedCommitments).length === 0) shouldGenerate = true;
-  } catch (error) {
-    console.warn('generateAndStoreDummyData: Error parsing stored data, forcing regeneration:', error);
-    shouldGenerate = true; // Force generation if parsing fails
-  }
-
-  if (!shouldGenerate) {
-    console.log('generateAndStoreDummyData: All essential dummy data already exists. Skipping generation.');
-    return;
-  }
-
-  console.log('generateAndStoreDummyData: Dummy data is missing or incomplete. Generating new dummy data.');
-
   // --- FORCE CLEAR ALL LOCAL STORAGE IF REGENERATING ---
   localStorage.clear(); 
   console.log('generateAndStoreDummyData: localStorage cleared before regenerating dummy data.');
