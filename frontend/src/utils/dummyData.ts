@@ -1,24 +1,26 @@
 import { v4 as uuidv4 } from 'uuid';
-import { User, UserRole, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment } from '@/types';
-import { toast } from 'sonner'; // Import toast for notifications
+import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment } from '@/types';
+import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  console.log('generateAndStoreDummyData: Attempting to generate dummy data.');
-  
-  // Check if users already exist to prevent regenerating and clearing existing data
-  const existingUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-  if (existingUsers.length > 0) {
-    console.log('generateAndStoreDummyData: Dummy data already exists. Skipping generation.');
-    // Ensure a current user is set if one isn't already, for a smoother experience
-    if (!localStorage.getItem('currentUser')) {
-      const creatorUser = existingUsers.find(u => u.email === 'creator@example.com');
-      if (creatorUser) {
-        localStorage.setItem('currentUser', JSON.stringify(creatorUser));
-        console.log('generateAndStoreDummyData: Set creator@example.com as currentUser for existing data.');
-      }
-    }
+  const DUMMY_DATA_VERSION = '1.2'; // Increment this version to force regeneration
+  const storedVersion = localStorage.getItem('dummyDataVersion');
+
+  if (storedVersion === DUMMY_DATA_VERSION) {
+    console.log('generateAndStoreDummyData: Dummy data is up to date. Skipping generation.');
     return;
   }
+
+  console.log(`generateAndStoreDummyData: Stale or missing dummy data. Regenerating for version ${DUMMY_DATA_VERSION}.`);
+
+  // Clear old data
+  localStorage.removeItem('users');
+  localStorage.removeItem('projectScripts');
+  localStorage.removeItem('integrationSlots');
+  localStorage.removeItem('skus');
+  localStorage.removeItem('bidReservations');
+  localStorage.removeItem('financingCommitments');
+  localStorage.removeItem('currentUser');
 
   // --- Users ---
   const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
@@ -28,206 +30,57 @@ export const generateAndStoreDummyData = () => {
     email: 'merchant@example.com', 
     name: 'Charlie Merchant', 
     role: 'Merchant',
-    minIntegrationFee: 1000, // Dummy minimum fee
-    eligibilityRules: '{"categories": ["skincare", "electronics"], "min_margin": 20}', // Dummy rules
-    suitabilityRules: '{"exclude_genres": ["horror", "violence"]}', // Dummy rules
+    minIntegrationFee: 1000,
+    eligibilityRules: '{"categories": ["skincare", "electronics"], "min_margin": 20}',
+    suitabilityRules: '{"exclude_genres": ["horror", "violence"]}',
   };
   const operatorUser: User = { id: uuidv4(), email: 'operator@example.com', name: 'Dana Operator', role: 'Operator' };
-
   const users: User[] = [creatorUser, advertiserUser, merchantUser, operatorUser];
   localStorage.setItem('users', JSON.stringify(users));
-  console.log('generateAndStoreDummyData: Stored users:', users);
 
   // --- Project Scripts (for Creator) ---
-  const script1: ProjectScript = {
-    id: uuidv4(),
-    title: 'The Last Coffee Shop',
-    creatorId: creatorUser.id,
-    docLink: 'https://www.africau.edu/images/default/sample.pdf',
-    productionWindow: 'Q1 2025 - Q2 2025',
-    budgetTarget: 150000,
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const script2: ProjectScript = {
-    id: uuidv4(),
-    title: 'Mystery of the Missing Widget',
-    creatorId: creatorUser.id,
-    docLink: 'https://www.africau.edu/images/default/sample.pdf',
-    productionWindow: 'Q3 2025 - Q4 2025',
-    budgetTarget: 200000,
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const projectScripts: ProjectScript[] = [script1, script2];
+  const script1: ProjectScript = { id: uuidv4(), title: 'The Last Coffee Shop', creatorId: creatorUser.id, docLink: 'https://example.com/script1.pdf', productionWindow: 'Q1 2025', budgetTarget: 150000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script3: ProjectScript = { id: uuidv4(), title: 'Untitled Sci-Fi Project', creatorId: creatorUser.id, docLink: 'https://example.com/script3.pdf', productionWindow: 'Q4 2025', budgetTarget: 500000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const projectScripts: ProjectScript[] = [script1, script2, script3];
   localStorage.setItem('projectScripts', JSON.stringify(projectScripts));
-  console.log('generateAndStoreDummyData: Stored projectScripts:', projectScripts);
 
-  // --- Integration Slots (for Creator's scripts) ---
-  const slot1_script1: IntegrationSlot = {
-    id: uuidv4(),
-    projectId: script1.id,
-    sceneRef: 'Opening Scene: Cafe Interior',
-    description: 'Character orders a specific brand of artisanal coffee.',
-    constraints: 'No alcohol, premium brands only',
-    pricingFloor: 5000,
-    modality: 'Private Auction',
-    status: 'Available',
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const slot2_script1: IntegrationSlot = {
-    id: uuidv4(),
-    projectId: script1.id,
-    sceneRef: 'Climax: Rooftop Chase',
-    description: 'Protagonist uses a high-tech gadget to escape.',
-    constraints: 'Tech/gadget brands, no firearms',
-    pricingFloor: 12000,
-    modality: 'PG/Reservation',
-    status: 'Available',
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const slot3_script2: IntegrationSlot = {
-    id: uuidv4(),
-    projectId: script2.id,
-    sceneRef: 'Lab Scene: Product Placement',
-    description: 'Scientist uses a specific brand of lab equipment or skincare.',
-    constraints: 'Ethical brands, science-backed products',
-    pricingFloor: 8000,
-    modality: 'Private Auction',
-    status: 'Available',
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const integrationSlots: IntegrationSlot[] = [slot1_script1, slot2_script1, slot3_script2];
+  // --- Integration Slots ---
+  const slot1: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Opening Scene: Cafe', description: 'Character orders artisanal coffee.', constraints: 'Premium brands only', pricingFloor: 5000, modality: 'Private Auction', status: 'Available', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot2: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Climax: Rooftop Chase', description: 'Protagonist uses a high-tech gadget.', constraints: 'Tech brands, no firearms', pricingFloor: 12000, modality: 'PG/Reservation', status: 'Locked', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot3: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Lab Scene: Product Placement', description: 'Scientist uses lab equipment.', constraints: 'Ethical brands', pricingFloor: 8000, modality: 'Private Auction', status: 'Available', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot4: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Detective Office', description: 'Character drinks a specific energy drink.', constraints: 'No alcohol', pricingFloor: 7500, modality: 'PG/Reservation', status: 'Completed', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const integrationSlots: IntegrationSlot[] = [slot1, slot2, slot3, slot4];
   localStorage.setItem('integrationSlots', JSON.stringify(integrationSlots));
-  console.log('generateAndStoreDummyData: Stored integrationSlots:', integrationSlots);
 
   // --- SKUs (for Merchant) ---
-  const sku1: SKU = {
-    id: uuidv4(),
-    merchantId: merchantUser.id,
-    title: 'Organic Coffee Blend',
-    price: 15.99,
-    margin: 40,
-    tags: ['coffee', 'organic', 'beverage'],
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const sku2: SKU = {
-    id: uuidv4(),
-    merchantId: merchantUser.id,
-    title: 'Smartwatch X200',
-    price: 299.99,
-    margin: 25,
-    tags: ['tech', 'wearable', 'gadget'],
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const skus: SKU[] = [sku1, sku2];
+  const skus: SKU[] = [
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Organic Coffee Blend', price: 15.99, margin: 40, tags: ['coffee', 'organic'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Smartwatch X200', price: 299.99, margin: 25, tags: ['tech', 'wearable'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Hydrating Face Serum', price: 45.00, margin: 60, tags: ['skincare', 'beauty'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+    { id: uuidv4(), merchantId: merchantUser.id, title: 'Noise-Cancelling Headphones', price: 199.50, margin: 30, tags: ['tech', 'audio'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
+  ];
   localStorage.setItem('skus', JSON.stringify(skus));
-  console.log('generateAndStoreDummyData: Stored SKUs:', skus);
 
   // --- Bid Reservations ---
-  const bid1_advertiser_slot1: BidReservation = {
-    id: uuidv4(),
-    counterpartyId: advertiserUser.id,
-    slotId: slot1_script1.id,
-    objective: 'Reach',
-    pricingModel: 'Fixed',
-    amountTerms: '$6000',
-    flightWindow: 'Feb 2025',
-    status: 'Pending',
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const bid2_merchant_slot1: BidReservation = {
-    id: uuidv4(),
-    counterpartyId: merchantUser.id,
-    slotId: slot1_script1.id,
-    objective: 'Conversions',
-    pricingModel: 'Hybrid',
-    amountTerms: '$4000 + 5% GMV',
-    flightWindow: 'Mar 2025',
-    status: 'Pending',
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const bid3_advertiser_slot2: BidReservation = {
-    id: uuidv4(),
-    counterpartyId: advertiserUser.id,
-    slotId: slot2_script1.id,
-    objective: 'Reach',
-    pricingModel: 'Fixed',
-    amountTerms: '$15000',
-    flightWindow: 'Apr 2025',
-    status: 'Accepted', // This one is accepted
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const bid4_merchant_slot3: BidReservation = {
-    id: uuidv4(),
-    counterpartyId: merchantUser.id,
-    slotId: slot3_script2.id,
-    objective: 'Conversions',
-    pricingModel: 'Rev-Share',
-    amountTerms: '10% GMV',
-    flightWindow: 'Oct 2025',
-    status: 'Pending',
-    createdDate: new Date().toISOString(),
-    lastModifiedDate: new Date().toISOString(),
-  };
-
-  const bidReservations: BidReservation[] = [
-    bid1_advertiser_slot1,
-    bid2_merchant_slot1,
-    bid3_advertiser_slot2,
-    bid4_merchant_slot3,
-  ];
+  const bid1 = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot1.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$6000', flightWindow: 'Feb 2025', status: 'Pending', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid2 = { id: uuidv4(), counterpartyId: merchantUser.id, slotId: slot1.id, objective: 'Conversions', pricingModel: 'Hybrid', amountTerms: '$4000 + 5% GMV', flightWindow: 'Mar 2025', status: 'Pending', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid3 = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot2.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$15000', flightWindow: 'Apr 2025', status: 'Accepted', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid4 = { id: uuidv4(), counterpartyId: merchantUser.id, slotId: slot3.id, objective: 'Conversions', pricingModel: 'Rev-Share', amountTerms: '10% GMV', flightWindow: 'Oct 2025', status: 'Declined', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid5 = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot4.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$9000', flightWindow: 'Nov 2025', status: 'Committed', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bidReservations: BidReservation[] = [bid1, bid2, bid3, bid4, bid5];
   localStorage.setItem('bidReservations', JSON.stringify(bidReservations));
-  console.log('generateAndStoreDummyData: Stored bidReservations:', bidReservations);
 
-  // --- Financing Commitments (for accepted bids) ---
-  const commitment1: FinancingCommitment = {
-    id: uuidv4(),
-    slotId: bid3_advertiser_slot2.slotId,
-    bidId: bid3_advertiser_slot2.id,
-    counterpartyId: bid3_advertiser_slot2.counterpartyId,
-    committedAmount: 15000,
-    paidDeposit: false,
-    schedule: 'Upon deal memo signature',
-    createdDate: new Date().toISOString(),
-  };
+  // --- Financing Commitments (for accepted/committed bids) ---
+  const commitments: FinancingCommitment[] = [
+    { id: uuidv4(), slotId: bid3.slotId, bidId: bid3.id, counterpartyId: bid3.counterpartyId, committedAmount: 15000, paidDeposit: false, schedule: 'Upon deal memo signature', createdDate: new Date().toISOString() },
+    { id: uuidv4(), slotId: bid5.slotId, bidId: bid5.id, counterpartyId: bid5.counterpartyId, committedAmount: 9000, paidDeposit: true, schedule: 'Net 30', createdDate: new Date().toISOString() },
+  ];
+  localStorage.setItem('financingCommitments', JSON.stringify(commitments));
 
-  const financingCommitments: FinancingCommitment[] = [commitment1];
-  localStorage.setItem('financingCommitments', JSON.stringify(financingCommitments));
-  console.log('generateAndStoreDummyData: Stored financingCommitments:', financingCommitments);
-
-  // --- Update slot status for accepted bids ---
-  const updatedSlotsForCommitment = integrationSlots.map(slot => {
-    if (slot.id === bid3_advertiser_slot2.slotId) {
-      return { ...slot, status: 'Locked', lastModifiedDate: new Date().toISOString() };
-    }
-    return slot;
-  });
-  localStorage.setItem('integrationSlots', JSON.stringify(updatedSlotsForCommitment));
-  console.log('generateAndStoreDummyData: Updated integrationSlots with locked status:', updatedSlotsForCommitment);
-
-  // Automatically log in the creator user after generating dummy data
-  localStorage.setItem('currentUser', JSON.stringify(creatorUser));
-  console.log('generateAndStoreDummyData: Automatically logged in creator@example.com.');
-
-  console.log('generateAndStoreDummyData: Dummy data generation complete. You should now be logged in as creator@example.com.');
-  toast.success('Dummy data generated and creator@example.com logged in!');
+  // --- Final Toast Notification ---
+  toast.success('Expanded dummy data has been generated!');
+  
+  // --- Set Version ---
+  localStorage.setItem('dummyDataVersion', DUMMY_DATA_VERSION);
 };
