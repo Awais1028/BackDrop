@@ -5,9 +5,20 @@ import { toast } from 'sonner'; // Import toast for notifications
 export const generateAndStoreDummyData = () => {
   console.log('generateAndStoreDummyData: Attempting to generate dummy data.');
   
-  // --- FORCE CLEAR ALL LOCAL STORAGE IF REGENERATING ---
-  localStorage.clear(); 
-  console.log('generateAndStoreDummyData: localStorage cleared before regenerating dummy data.');
+  // Check if users already exist to prevent regenerating and clearing existing data
+  const existingUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
+  if (existingUsers.length > 0) {
+    console.log('generateAndStoreDummyData: Dummy data already exists. Skipping generation.');
+    // Ensure a current user is set if one isn't already, for a smoother experience
+    if (!localStorage.getItem('currentUser')) {
+      const creatorUser = existingUsers.find(u => u.email === 'creator@example.com');
+      if (creatorUser) {
+        localStorage.setItem('currentUser', JSON.stringify(creatorUser));
+        console.log('generateAndStoreDummyData: Set creator@example.com as currentUser for existing data.');
+      }
+    }
+    return;
+  }
 
   // --- Users ---
   const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
@@ -205,9 +216,10 @@ export const generateAndStoreDummyData = () => {
   localStorage.setItem('integrationSlots', JSON.stringify(updatedSlotsForCommitment));
   console.log('generateAndStoreDummyData: Updated integrationSlots with locked status:', updatedSlotsForCommitment);
 
+  // Automatically log in the creator user after generating dummy data
+  localStorage.setItem('currentUser', JSON.stringify(creatorUser));
+  console.log('generateAndStoreDummyData: Automatically logged in creator@example.com.');
 
-  console.log('generateAndStoreDummyData: Dummy data generation complete. You can now log in with:');
-  users.forEach(u => console.log(`- Email: ${u.email}, Role: ${u.role}`));
-
-  toast.success('Dummy data generated! Please log in with creator@example.com (Role: Creator) to see pre-filled content.');
+  console.log('generateAndStoreDummyData: Dummy data generation complete. You should now be logged in as creator@example.com.');
+  toast.success('Dummy data generated and creator@example.com logged in!');
 };
