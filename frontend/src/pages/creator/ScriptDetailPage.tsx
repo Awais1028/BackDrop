@@ -294,14 +294,14 @@ const ScriptDetailPage = () => {
     showSuccess('Bid declined.');
   };
 
-  const getBidStatusColor = (status: BidReservation['status']) => {
+  const getBidStatusStyle = (status: BidReservation['status']) => {
     switch (status) {
-      case 'Pending': return 'text-yellow-500';
-      case 'Accepted': return 'text-green-500';
-      case 'Committed': return 'text-blue-500';
+      case 'Pending': return { textColor: 'text-yellow-600 dark:text-yellow-400', borderColor: 'border-yellow-500' };
+      case 'Accepted': return { textColor: 'text-green-600 dark:text-green-400', borderColor: 'border-green-500' };
+      case 'Committed': return { textColor: 'text-blue-600 dark:text-blue-400', borderColor: 'border-blue-500' };
       case 'Declined':
-      case 'Cancelled': return 'text-red-500';
-      default: return 'text-gray-500';
+      case 'Cancelled': return { textColor: 'text-red-600 dark:text-red-400', borderColor: 'border-red-500' };
+      default: return { textColor: 'text-gray-600 dark:text-gray-400', borderColor: 'border-gray-500' };
     }
   };
 
@@ -513,7 +513,7 @@ const ScriptDetailPage = () => {
                 ) : (
                   <div className="space-y-3">
                     {bids.filter(bid => bid.slotId === slot.id).map(bid => (
-                      <Card key={bid.id} className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <Card key={bid.id} className={`p-3 bg-slate-50 dark:bg-slate-800/60 rounded-md border-l-4 shadow-sm ${getBidStatusStyle(bid.status).borderColor}`}>
                         <CardTitle className="text-base flex items-center gap-1">
                           <Handshake className="h-4 w-4 text-purple-400" /> Bid from {usersMap.get(bid.counterpartyId) || 'Unknown Bidder'}
                         </CardTitle>
@@ -523,7 +523,7 @@ const ScriptDetailPage = () => {
                           <p><strong>Model:</strong> {bid.pricingModel}</p>
                           <p><strong>Terms:</strong> {bid.amountTerms}</p>
                           <p><strong>Flight:</strong> {bid.flightWindow}</p>
-                          <p className={`font-semibold ${getBidStatusColor(bid.status)}`}>Status: {bid.status}</p>
+                          <p className={`font-semibold ${getBidStatusStyle(bid.status).textColor}`}>Status: {bid.status}</p>
                           {bid.status === 'Pending' && (
                             <div className="flex gap-2 mt-3">
                               <Button size="sm" onClick={() => handleAcceptBid(bid)}>
