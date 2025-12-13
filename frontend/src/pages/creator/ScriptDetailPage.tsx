@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProjectScript, IntegrationSlot, BidReservation, FinancingCommitment } from '@/types';
+import { ProjectScript, IntegrationSlot, BidReservation, FinancingCommitment, User } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { FileText, PlusCircle, Tag, Edit, Trash2, Bot, CheckCircle, XCircle, DollarSign, Calendar, Handshake } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
@@ -20,7 +20,8 @@ const ScriptDetailPage = () => {
 
   const [script, setScript] = useState<ProjectScript | null>(null);
   const [slots, setSlots] = useState<IntegrationSlot[]>([]);
-  const [bids, setBids] = useState<BidReservation[]>([]); // All bids for this script's slots
+  const [bids, setBids] = useState<BidReservation[]>([]);
+  const [usersMap, setUsersMap] = useState<Map<string, string>>(new Map());
   const [isSlotDialogOpen, setIsSlotDialogOpen] = useState(false);
   const [isEditScriptDialogOpen, setIsEditScriptDialogOpen] = useState(false);
 
@@ -42,6 +43,11 @@ const ScriptDetailPage = () => {
       navigate('/login');
       return;
     }
+
+    const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
+    const uMap = new Map<string, string>();
+    allUsers.forEach(u => uMap.set(u.id, u.name));
+    setUsersMap(uMap);
 
     const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
     const foundScript = storedScripts.find(s => s.id === scriptId && s.creatorId === user.id);
@@ -468,7 +474,7 @@ const ScriptDetailPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {slots.map((slot) => (
-            <Card key={slot.id}>
+            <Card key={slot.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="h-5 w-5 text-green-500" />
@@ -507,9 +513,9 @@ const ScriptDetailPage = () => {
                 ) : (
                   <div className="space-y-3">
                     {bids.filter(bid => bid.slotId === slot.id).map(bid => (
-                      <Card key={bid.id} className="p-3 bg-gray-50 dark:bg-gray-800">
+                      <Card key={bid.id} className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                         <CardTitle className="text-base flex items-center gap-1">
-                          <Handshake className="h-4 w-4 text-purple-400" /> Bid from {bid.counterpartyId.substring(0, 8)}...
+                          <Handshake className="h-4 w-4 text-purple-400" /> Bid from {usersMap.get(bid.counterpartyId) || 'Unknown Bidder'}
                         </CardTitle>
                         <CardDescription className="text-xs">Submitted: {new Date(bid.createdDate).toLocaleDateString()}</CardDescription>
                         <CardContent className="p-0 mt-2 text-sm">
