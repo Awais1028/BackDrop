@@ -5,18 +5,22 @@ import { MadeWithDyad } from '@/components/made-with-dyad';
 import { Settings } from 'lucide-react';
 
 const HomePage = () => {
-  const { user, role } = useAuth();
+  const { user, role, isLoading } = useAuth(); // Get isLoading from context
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('HomePage useEffect: user:', user, 'role:', role);
-    // Only redirect if user is explicitly null (not logged in) or if user and role are set.
-    // This prevents premature redirects while AuthContext is initializing.
+    console.log('HomePage useEffect: isLoading:', isLoading, 'user:', user, 'role:', role);
+
+    if (isLoading) {
+      console.log('HomePage useEffect: AuthContext is still loading. Waiting...');
+      return; // Do nothing while authentication context is loading
+    }
+
     if (user === null) {
-      console.log('HomePage useEffect: User is explicitly null. Redirecting to /login.');
+      console.log('HomePage useEffect: AuthContext finished loading, user is null. Redirecting to /login.');
       navigate('/login', { replace: true });
     } else if (user && role) {
-      console.log(`HomePage useEffect: User logged in as ${user.name} (${role}). Redirecting...`);
+      console.log(`HomePage useEffect: AuthContext finished loading, user logged in as ${user.name} (${role}). Redirecting...`);
       // User is logged in, redirect to their specific dashboard
       switch (role) {
         case 'Creator':
@@ -36,16 +40,10 @@ const HomePage = () => {
           break;
       }
     }
-    // If user is not null but role is not yet set (e.g., during initial render before full context is ready),
-    // the component will stay in its loading state.
-  }, [user, role, navigate]);
+  }, [user, role, isLoading, navigate]); // Add isLoading to dependencies
 
-  // This component will quickly redirect, so a simple loading indicator is sufficient
-  // It will only show if `user` is not null but `role` is not yet determined,
-  // or during the very brief moment before the redirect to /login if user is null.
-  if (user === null) {
-    // If user is null, the useEffect above will redirect to /login.
-    // This return is mostly a fallback during the very brief moment before redirect.
+  // Display loading indicator if AuthContext is still loading
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
         <div className="mb-8">
@@ -55,7 +53,7 @@ const HomePage = () => {
           />
         </div>
         <h1 className="text-xl font-medium text-gray-300 text-center max-w-md">
-          Initializing...
+          Initializing application...
         </h1>
         <div className="absolute bottom-4">
           <MadeWithDyad />
@@ -64,8 +62,8 @@ const HomePage = () => {
     );
   }
 
-  // If user is not null, but role might still be undefined/null during a very brief transition,
-  // or if the redirect logic is still processing.
+  // This part should ideally not be reached if redirects work correctly,
+  // but serves as a fallback if something goes wrong after loading.
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
       <div className="mb-8">

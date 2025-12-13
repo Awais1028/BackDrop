@@ -7,6 +7,7 @@ import { toast } from 'sonner'; // Import toast for notifications
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
+  isLoading: boolean; // New loading state
   login: (email: string, role: UserRole) => void;
   logout: () => void;
   register: (name: string, email: string, role: UserRole) => void;
@@ -17,14 +18,36 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Initialize as true
 
   useEffect(() => {
-    console.log('AuthContext useEffect: Initializing dummy data generation...');
-    // Always attempt to generate dummy data if any essential part is missing
+    console.log('AuthContext useEffect: Initializing authentication state...');
+    
+    // 1. Ensure dummy data is generated
     generateAndStoreDummyData();
-    // The user state will now only be set by explicit login/register actions,
-    // not by attempting to load from localStorage on initial render.
-    console.log('AuthContext useEffect: Dummy data generation initiated. User state will be null until explicit login/register.');
+
+    // 2. Attempt to load current user from localStorage after dummy data is ensured
+    const storedUser = localStorage.getItem('currentUser');
+    console.log('AuthContext useEffect: Attempting to load currentUser from localStorage. Value:', storedUser);
+
+    if (storedUser) {
+      try {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setRole(parsedUser.role);
+        console.log(`AuthContext useEffect: Loaded current user: ${parsedUser.email} (${parsedUser.role}). User state set.`);
+      } catch (error) {
+        console.error('AuthContext useEffect: Error parsing currentUser from localStorage:', error);
+        localStorage.removeItem('currentUser'); // Clear invalid current user
+        console.log('AuthContext useEffect: Invalid currentUser removed from localStorage.');
+      }
+    } else {
+      console.log('AuthContext useEffect: No current user found in localStorage.');
+    }
+    
+    setIsLoading(false); // Set loading to false once all initial checks are done
+    console.log('AuthContext useEffect: Initial authentication checks complete. isLoading set to false.');
+    console.log('AuthContext useEffect: Current user state after initial load:', user, 'Role:', role);
   }, []); // Empty dependency array means this runs once on mount
 
   const login = (email: string, selectedRole: UserRole) => {
@@ -83,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, register }}>
+    <AuthContext.Provider value={{ user, role, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
