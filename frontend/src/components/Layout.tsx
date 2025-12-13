@@ -19,7 +19,7 @@ const navLinks: NavLink[] = [
   { to: '/creator/dashboard', label: 'Financing Dashboard', icon: Settings, roles: ['Creator'] },
   { to: '/discover', label: 'Discover Opportunities', icon: Search, roles: ['Advertiser', 'Merchant'] },
   { to: '/buyer/bids', label: 'My Bids/Reservations', icon: ShoppingBag, roles: ['Advertiser', 'Merchant'] },
-  { to: '/merchant/products', label: 'My Products', icon: ShoppingBag, roles: ['Merchant'] },
+  { to: '/merchant/products', label: 'My Products', icon: ShoppingBag, roles: ['Merchant'] }, // Placeholder for future implementation
   { to: '/operator/inventory', label: 'Inventory', icon: Users, roles: ['Operator'] },
   { to: '/operator/workflow', label: 'Workflow Monitoring', icon: Settings, roles: ['Operator'] },
   { to: '/operator/financing', label: 'Financing & Margin', icon: Settings, roles: ['Operator'] },

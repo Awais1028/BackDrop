@@ -96,13 +96,3 @@ export interface AuditLog {
   details: string; // JSON string
   timestamp: string;
 }
-
-export interface MerchantProfile {
-  id: string;
-  userId: string;
-  minIntegrationFee: number;
-  eligibilityRules: string; // JSON string or text
-  suitabilityRules: string; // JSON string or text
-  createdDate: string;
-  lastModifiedDate: string;
-}

@@ -14,7 +14,6 @@ import ScriptDetailPage from "./pages/creator/ScriptDetailPage";
 import FinancingDashboardPage from "./pages/creator/FinancingDashboardPage";
 import DiscoverOpportunitiesPage from "./pages/buyer/DiscoverOpportunitiesPage";
 import MyBidsReservationsPage from "./pages/buyer/MyBidsReservationsPage";
-import MyProductsPage from "./pages/merchant/MyProductsPage"; // Import MyProductsPage
 
 const queryClient = new QueryClient();
 
@@ -49,7 +48,7 @@ const App = () => (
               <Route element={<ProtectedRoute allowedRoles={["Merchant"]} />}>
                 <Route path="/discover" element={<DiscoverOpportunitiesPage />} />
                 <Route path="/buyer/bids" element={<MyBidsReservationsPage />} />
-                <Route path="/merchant/products" element={<MyProductsPage />} /> {/* Merchant Products Page */}
+                {/* <Route path="/merchant/products" element={<MyProductsPage />} /> */} {/* This page is not yet implemented */}
               </Route>
 
               {/* Protected Operator Routes (Commented out for Creator-only focus) */}
