@@ -65,6 +65,10 @@ const MyScriptsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {/* TEMPORARY MY SCRIPTS PAGE TEST MESSAGE */}
+      <div className="text-blue-500 text-3xl font-bold mb-4">MY SCRIPTS PAGE IS RENDERING!</div>
+      {/* END TEMPORARY MY SCRIPTS PAGE TEST MESSAGE */}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Scripts</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
