@@ -350,7 +350,7 @@ const MyProductsPage = () => {
           {skus.map((sku) => (
             <Card key={sku.id}>
               <CardContent className="p-4 flex flex-col sm:flex-row items-start gap-4">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <CardTitle className="mb-1 text-lg">{sku.title}</CardTitle>
                   <CardDescription>Price: ${sku.price.toFixed(2)} | Margin: {sku.margin}%</CardDescription>
                   <p className="text-sm text-muted-foreground mt-2 mb-4">
