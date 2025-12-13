@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { User, UserRole, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment } from '@/types';
+import { User, UserRole, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment, MerchantProfile } from '@/types';
 import { toast } from 'sonner'; // Import toast for notifications
 
 export const generateAndStoreDummyData = () => {
@@ -127,6 +127,20 @@ export const generateAndStoreDummyData = () => {
   const skus: SKU[] = [sku1, sku2];
   localStorage.setItem('skus', JSON.stringify(skus));
   console.log('generateAndStoreDummyData: Stored SKUs:', skus);
+
+  // --- Merchant Profile ---
+  const merchantProfile: MerchantProfile = {
+    id: uuidv4(),
+    userId: merchantUser.id,
+    minIntegrationFee: 1000,
+    eligibilityRules: '{"categories": ["electronics", "food"], "min_margin": 20}',
+    suitabilityRules: 'No violent content, family-friendly',
+    createdDate: new Date().toISOString(),
+    lastModifiedDate: new Date().toISOString(),
+  };
+  localStorage.setItem('merchantProfiles', JSON.stringify([merchantProfile]));
+  console.log('generateAndStoreDummyData: Stored merchantProfile:', merchantProfile);
+
 
   // --- Bid Reservations ---
   const bid1_advertiser_slot1: BidReservation = {
