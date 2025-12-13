@@ -5,6 +5,10 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  // Merchant-specific fields
+  minIntegrationFee?: number;
+  eligibilityRules?: string; // JSON string or text for rules
+  suitabilityRules?: string; // JSON string or text for rules
 }
 
 export interface ProjectScript {

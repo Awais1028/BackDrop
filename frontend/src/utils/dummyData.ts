@@ -23,7 +23,15 @@ export const generateAndStoreDummyData = () => {
   // --- Users ---
   const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
   const advertiserUser: User = { id: uuidv4(), email: 'advertiser@example.com', name: 'Bob Advertiser', role: 'Advertiser' };
-  const merchantUser: User = { id: uuidv4(), email: 'merchant@example.com', name: 'Charlie Merchant', role: 'Merchant' };
+  const merchantUser: User = { 
+    id: uuidv4(), 
+    email: 'merchant@example.com', 
+    name: 'Charlie Merchant', 
+    role: 'Merchant',
+    minIntegrationFee: 1000, // Dummy minimum fee
+    eligibilityRules: '{"categories": ["skincare", "electronics"], "min_margin": 20}', // Dummy rules
+    suitabilityRules: '{"exclude_genres": ["horror", "violence"]}', // Dummy rules
+  };
   const operatorUser: User = { id: uuidv4(), email: 'operator@example.com', name: 'Dana Operator', role: 'Operator' };
 
   const users: User[] = [creatorUser, advertiserUser, merchantUser, operatorUser];
