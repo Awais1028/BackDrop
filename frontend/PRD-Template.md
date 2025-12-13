@@ -1,11 +1,11 @@
 ---
 title: Product Requirements Document
-app: quick-otter-bounce
+app: backdrop
 created: 2025-12-13T10:00:44.526Z
 version: 1
 ---
 
-# quick-otter-bounce - Product Requirements Document
+# backdrop - Product Requirements Document
 
 ## Executive Summary
 
@@ -209,7 +209,7 @@ version: 1
 - **[Entity 2]:** Create/Read only because [reason - e.g., audit trail]
 
 **From User's Product Idea:**
-- **Product:** quick-otter-bounce
+- **Product:** backdrop
 - **Technical Level:** [What user indicated, if any]
 
 **Key Assumptions Made:**
@@ -218,7 +218,7 @@ version: 1
 
 ---
 
-*This PRD template was automatically generated when creating your quick-otter-bounce app. Please customize it based on your specific requirements using the Deep Mode PRD flow in SnapDev.*
+*This PRD template was automatically generated when creating your backdrop app. Please customize it based on your specific requirements using the Deep Mode PRD flow in SnapDev.*
 
 **Next Steps:**
 1. Use SnapDev's Deep Mode to generate a comprehensive PRD based on your product idea

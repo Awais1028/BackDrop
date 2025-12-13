@@ -1,6 +1,6 @@
 ---
 title: Product Requirements Document
-app: quick-otter-bounce
+app: backdrop
 created: 2025-12-13T10:00:44.529Z
 version: 1
 source: Deep Mode PRD Generation
@@ -526,7 +526,7 @@ source: Deep Mode PRD Generation
     *   **Project/Script:** `title` (required, unique per creator), `doc_link` (required), `budget_target` (optional, numeric).
     *   **Integration Slot:** `project_id` (required, foreign key), `scene_ref` (required), `description` (required), `pricing_floor` (required, numeric, >=0), `modality` (required, enum: Private Auction, PG/Reservation).
     *   **SKU:** `merchant_id` (required, foreign key), `title` (required), `price` (required, numeric, >0), `margin` (required, numeric, 0-100).
-    *   **Bid/Reservation:** `counterparty_id` (required, foreign key), `slot_id` (required, foreign key), `objective` (required, enum: Reach, Conversions), `pricing_model` (required, enum: Fixed, Rev-Share, Hybrid), `amount/terms` (required, depends on model), `status` (enum: Pending, Accepted, Declined, Committed, Cancelled).
+    *   **Bid/Reservation:** `counterparty_id` (required, foreign key), `slot_id` (required, foreign key), `objective` (required, enum: Reach, Conversions), `pricing_model` (required, enum: Fixed, Rev-Share, Hybrid), `amount/terms` (required, depends on model), `flight_window` (required, text/date range), `status` (enum: Pending, Accepted, Declined, Committed, Cancelled).
     *   **Approval:** `slot_id` (required), `counterparty_id` (required), `decision` (enum: Approved, Declined), `timestamp` (required).
     *   **Deal Memo:** `slot_id` (required), `pdf_link` (required).
     *   **Financing Commitment:** `slot_id` (required), `counterparty_id` (required), `committed_amount` (required, numeric, >0).
@@ -687,31 +687,31 @@ The core workflow from script upload to deal memo generation and financing view 
 
 **9.2 In Scope for MVP**
 *   FR-001: Script/Treatment Upload & Management
-*   FR-002: Integration Slot Tagging (Manual + AI Assist)
-*   FR-003: Slot Constraints & Pricing Floors
-*   FR-004: Slot Modality Selection
-*   FR-005: Review Bids & Requirements
-*   FR-006: Approve/Decline Bids & Generate Deal Memo
-*   FR-007: Financing Dashboard (Creator)
-*   FR-008: Discover Pre-Production Opportunities
-*   FR-009: Place Bids/Reservations
-*   FR-010: Comment/Approve Proposed Integrations (Buyer Side)
-*   FR-011: Commit Spend
-*   FR-012: Merchant Bulk SKU Upload (CSV)
-*   FR-013: Merchant Minimum Integration Fee
-*   FR-014: Merchant Optimization Mode/Pricing Model
-*   FR-015: Merchant Eligibility & Suitability Rules
-*   FR-016: Operator Inventory Curation & Visibility
-*   FR-017: Operator Workflow Monitoring (Auction/Reservation/Approvals)
-*   FR-018: Operator Financing & Margin View
-*   FR-019: Evidence Pack Export
-*   FR-XXX: User Authentication
-*   FR-XXX: Pricing Engine v0
-*   FR-XXX: Private Auction Logic
-*   FR-XXX: Reservation Logic
-*   FR-XXX: Approvals Workflow
-*   FR-XXX: Deal Memo Generation
-*   FR-XXX: AI Assistance for Script Tagging
+*   <del>FR-002: Integration Slot Tagging (Manual + AI Assist)</del>
+*   <del>FR-003: Slot Constraints & Pricing Floors</del>
+*   <del>FR-004: Slot Modality Selection</del>
+*   <del>FR-005: Review Bids & Requirements</del>
+*   <del>FR-006: Approve/Decline Bids & Generate Deal Memo</del>
+*   <del>FR-007: Financing Dashboard (Creator)</del>
+*   <del>FR-008: Discover Pre-Production Opportunities</del>
+*   <del>FR-009: Place Bids/Reservations</del>
+*   <del>FR-010: Comment/Approve Proposed Integrations (Buyer Side)</del>
+*   <del>FR-011: Commit Spend</del>
+*   <del>FR-012: Merchant Bulk SKU Upload (CSV)</del>
+*   <del>FR-013: Merchant Minimum Integration Fee</del>
+*   <del>FR-014: Merchant Optimization Mode/Pricing Model</del>
+*   <del>FR-015: Merchant Eligibility & Suitability Rules</del>
+*   <del>FR-016: Operator Inventory Curation & Visibility</del>
+*   <del>FR-017: Operator Workflow Monitoring (Auction/Reservation/Approvals)</del>
+*   <del>FR-018: Operator Financing & Margin View</del>
+*   <del>FR-019: Evidence Pack Export</del>
+*   <del>FR-XXX: User Authentication</del>
+*   <del>FR-XXX: Pricing Engine v0</del>
+*   <del>FR-XXX: Private Auction Logic</del>
+*   <del>FR-XXX: Reservation Logic</del>
+*   <del>FR-XXX: Approvals Workflow</del>
+*   <del>FR-XXX: Deal Memo Generation</del>
+*   <del>FR-XXX: AI Assistance for Script Tagging</del>
 
 **9.3 Deferred Features (Post-MVP Roadmap)**
 
@@ -743,7 +743,7 @@ The core workflow from script upload to deal memo generation and financing view 
     *   **Description:** Rule-based matching across genre, audience, SKU category, margin threshold, and creator constraints to suggest relevant slots/buyers.
     *   **Reason for Deferral:** While valuable, a recommendation engine is an enhancement to discovery, not essential for the core transaction loop. The MVP focuses on basic filtering.
 *   **DF-010: Basic Logistics (Product Sample Shipping & Compliance Checklists)**
-    *   **Description:** Features to manage the shipping of product samples and track compliance requirements.
+    *   **Description:** These are operational "nice-to-haves" that add workflow and data management complexity beyond the core deal-making process.
     *   **Reason for Deferral:** These are operational "nice-to-haves" that add workflow and data management complexity beyond the core deal-making process.
 *   **DF-011: Affiliate Link Generation & Click Tracking Stub**
     *   **Description:** System for generating unique affiliate links and tracking clicks.
