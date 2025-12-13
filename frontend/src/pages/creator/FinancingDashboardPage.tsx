@@ -71,88 +71,98 @@ const FinancingDashboardPage = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Financing Dashboard</h1>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Budget Target</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${totalBudgetTarget.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Sum of all budget targets from your scripts.
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Committed Funds</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${totalCommittedAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Funds committed from approved integration slots.
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Budget Covered</CardTitle>
-            <Percent className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{percentageCovered.toFixed(2)}%</div>
-            <Progress value={percentageCovered} className="mt-2" />
-            <p className="text-xs text-muted-foreground">
-              Percentage of your total budget target covered by commitments.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-4">Your Projects Overview</h2>
       {scripts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[40vh] bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+        <div className="flex flex-col items-center justify-center h-[60vh] bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
           <FileText className="h-16 w-16 text-gray-400 mb-4" />
-          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No scripts with budget targets found.</p>
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No scripts uploaded yet.</p>
           <p className="text-md text-gray-500 dark:text-gray-400">Upload a script and set a budget to see financing impact here.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {scripts.map(script => {
-            const scriptSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-            const relevantSlots = scriptSlots.filter(slot => slot.projectId === script.id);
-            const relevantSlotIds = relevantSlots.map(slot => slot.id);
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Budget Target</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${totalBudgetTarget.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Sum of all budget targets from your scripts.
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Committed Funds</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${totalCommittedAmount.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Funds committed from approved integration slots.
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Budget Covered</CardTitle>
+                <Percent className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{percentageCovered.toFixed(2)}%</div>
+                <Progress value={percentageCovered} className="mt-2" />
+                <p className="text-xs text-muted-foreground">
+                  Percentage of your total budget target covered by commitments.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-            const storedCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
-            const scriptCommitments = storedCommitments.filter(commitment =>
-              relevantSlotIds.includes(commitment.slotId)
-            );
+          <h2 className="text-2xl font-semibold mb-4">Your Projects Overview</h2>
+          {scripts.filter(s => s.budgetTarget !== undefined && s.budgetTarget > 0).length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[40vh] bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+              <FileText className="h-16 w-16 text-gray-400 mb-4" />
+              <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No scripts with budget targets found.</p>
+              <p className="text-md text-gray-500 dark:text-gray-400">Add a budget target to your scripts to see financing impact here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {scripts.map(script => {
+                const scriptSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
+                const relevantSlots = scriptSlots.filter(slot => slot.projectId === script.id);
+                const relevantSlotIds = relevantSlots.map(slot => slot.id);
 
-            const scriptCommittedAmount = scriptCommitments.reduce((sum, c) => sum + c.committedAmount, 0);
-            const scriptPercentageCovered = script.budgetTarget && script.budgetTarget > 0
-              ? (scriptCommittedAmount / script.budgetTarget) * 100
-              : 0;
+                const storedCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
+                const scriptCommitments = storedCommitments.filter(commitment =>
+                  relevantSlotIds.includes(commitment.slotId)
+                );
 
-            return (
-              <Card key={script.id}>
-                <CardHeader>
-                  <CardTitle>{script.title}</CardTitle>
-                  <CardDescription>Production Window: {script.productionWindow}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="mb-2"><strong>Budget Target:</strong> ${script.budgetTarget?.toLocaleString() || 'N/A'}</p>
-                  <p className="mb-2"><strong>Committed:</strong> ${scriptCommittedAmount.toLocaleString()}</p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={scriptPercentageCovered} className="flex-1" />
-                    <span className="text-sm font-medium">{scriptPercentageCovered.toFixed(2)}% Covered</span>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                const scriptCommittedAmount = scriptCommitments.reduce((sum, c) => sum + c.committedAmount, 0);
+                const scriptPercentageCovered = script.budgetTarget && script.budgetTarget > 0
+                  ? (scriptCommittedAmount / script.budgetTarget) * 100
+                  : 0;
+
+                return (
+                  <Card key={script.id}>
+                    <CardHeader>
+                      <CardTitle>{script.title}</CardTitle>
+                      <CardDescription>Production Window: {script.productionWindow}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-2"><strong>Budget Target:</strong> ${script.budgetTarget?.toLocaleString() || 'N/A'}</p>
+                      <p className="mb-2"><strong>Committed:</strong> ${scriptCommittedAmount.toLocaleString()}</p>
+                      <div className="flex items-center gap-2">
+                        <Progress value={scriptPercentageCovered} className="flex-1" />
+                        <span className="text-sm font-medium">{scriptPercentageCovered.toFixed(2)}% Covered</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
