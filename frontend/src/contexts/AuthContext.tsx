@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('AuthContext useEffect: Error parsing users from localStorage, treating as empty:', error);
-      // If parsing fails, treat as if no users exist, so dummy data will be generated
+      // If parsing fails here, treat as if no users exist, so dummy data will be generated
       usersExist = false;
       localStorage.removeItem('users'); // Clear potentially malformed data
     }
@@ -38,8 +38,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!usersExist) {
       console.log('AuthContext useEffect: No valid users found, generating dummy data.');
       generateAndStoreDummyData();
+      console.log('AuthContext useEffect: Dummy data generation function called.');
     } else {
-      console.log('AuthContext useEffect: Users found in localStorage.');
+      console.log('AuthContext useEffect: Users found in localStorage. Skipping dummy data generation.');
     }
 
     const storedUser = localStorage.getItem('currentUser');
@@ -66,9 +67,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(existingUser);
       setRole(existingUser.role);
       localStorage.setItem('currentUser', JSON.stringify(existingUser));
-      console.log(`User ${existingUser.name} (${existingUser.role}) logged in.`);
+      console.log(`AuthContext login: User ${existingUser.name} (${existingUser.role}) logged in.`);
     } else {
-      console.error('Login failed: User not found or role mismatch.');
+      console.error('AuthContext login: Login failed: User not found or role mismatch.');
       alert('Login failed. Please register or check your credentials/role. If this is your first time, try refreshing the page to load dummy data.');
     }
   };
@@ -94,14 +95,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(newUser);
     setRole(newUser.role);
     localStorage.setItem('currentUser', JSON.stringify(newUser));
-    console.log(`User ${newUser.name} (${newUser.role}) registered and logged in.`);
+    console.log(`AuthContext register: User ${newUser.name} (${newUser.role}) registered and logged in.`);
   };
 
   const logout = () => {
     setUser(null);
     setRole(null);
     localStorage.removeItem('currentUser');
-    console.log('User logged out.');
+    console.log('AuthContext logout: User logged out.');
   };
 
   return (

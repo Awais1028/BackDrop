@@ -16,7 +16,9 @@ const FinancingDashboardPage = () => {
   const [scripts, setScripts] = useState<ProjectScript[]>([]);
 
   useEffect(() => {
+    console.log('FinancingDashboardPage useEffect: Current user:', user);
     if (!user || user.role !== 'Creator') {
+      console.log('FinancingDashboardPage useEffect: User not Creator or null, redirecting to login.');
       navigate('/login'); // Redirect if not logged in or not a Creator
       return;
     }
@@ -24,6 +26,7 @@ const FinancingDashboardPage = () => {
     const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
     const creatorScripts = storedScripts.filter(script => script.creatorId === user.id);
     setScripts(creatorScripts);
+    console.log('FinancingDashboardPage useEffect: Creator scripts:', creatorScripts);
 
     let currentTotalBudgetTarget = 0;
     creatorScripts.forEach(script => {
@@ -32,22 +35,30 @@ const FinancingDashboardPage = () => {
       }
     });
     setTotalBudgetTarget(currentTotalBudgetTarget);
+    console.log('FinancingDashboardPage useEffect: Total budget target:', currentTotalBudgetTarget);
+
 
     const storedSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
     const creatorSlotIds = storedSlots
       .filter(slot => creatorScripts.some(script => script.id === slot.projectId))
       .map(slot => slot.id);
+    console.log('FinancingDashboardPage useEffect: Creator slot IDs:', creatorSlotIds);
+
 
     const storedCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
     const creatorCommitments = storedCommitments.filter(commitment =>
       creatorSlotIds.includes(commitment.slotId)
     );
+    console.log('FinancingDashboardPage useEffect: Creator commitments:', creatorCommitments);
+
 
     let currentTotalCommittedAmount = 0;
     creatorCommitments.forEach(commitment => {
       currentTotalCommittedAmount += commitment.committedAmount;
     });
     setTotalCommittedAmount(currentTotalCommittedAmount);
+    console.log('FinancingDashboardPage useEffect: Total committed amount:', currentTotalCommittedAmount);
+
 
     if (currentTotalBudgetTarget > 0) {
       setPercentageCovered((currentTotalCommittedAmount / currentTotalBudgetTarget) * 100);

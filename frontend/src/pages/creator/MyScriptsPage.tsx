@@ -22,9 +22,15 @@ const MyScriptsPage = () => {
   const [newScriptBudgetTarget, setNewScriptBudgetTarget] = useState<number | ''>('');
 
   useEffect(() => {
+    console.log('MyScriptsPage useEffect: Current user:', user);
     if (user) {
       const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-      setScripts(storedScripts.filter(script => script.creatorId === user.id));
+      const filteredScripts = storedScripts.filter(script => script.creatorId === user.id);
+      setScripts(filteredScripts);
+      console.log('MyScriptsPage useEffect: Filtered scripts for user:', filteredScripts);
+    } else {
+      console.log('MyScriptsPage useEffect: User is null, scripts will be empty.');
+      setScripts([]);
     }
   }, [user]);
 
