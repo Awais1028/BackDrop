@@ -48,6 +48,16 @@ const WorkflowMonitoringPage = () => {
     setSlotsMap(sMap);
   }, [user, role, navigate]);
 
+  const getValue = (bid: BidReservation, key: SortKey) => {
+    switch (key) {
+      case 'slot': return slotsMap.get(bid.slotId)?.sceneRef || '';
+      case 'counterparty': return usersMap.get(bid.counterpartyId) || '';
+      case 'amountTerms': return parseFloat(bid.amountTerms.replace(/[^0-9.-]+/g, "")) || 0;
+      case 'createdDate': return new Date(bid.createdDate).getTime();
+      case 'status': return bid.status;
+    }
+  };
+
   const processedBids = useMemo(() => {
     let filteredBids = bids.filter(bid => {
       const slotName = slotsMap.get(bid.slotId)?.sceneRef || '';
@@ -79,16 +89,6 @@ const WorkflowMonitoringPage = () => {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
-
-  const getValue = (bid: BidReservation, key: SortKey) => {
-    switch (key) {
-      case 'slot': return slotsMap.get(bid.slotId)?.sceneRef || '';
-      case 'counterparty': return usersMap.get(bid.counterpartyId) || '';
-      case 'amountTerms': return parseFloat(bid.amountTerms.replace(/[^0-9.-]+/g, "")) || 0;
-      case 'createdDate': return new Date(bid.createdDate).getTime();
-      case 'status': return bid.status;
-    }
-  };
 
   const handleSort = (key: SortKey) => {
     let direction: SortDirection = 'asc';
