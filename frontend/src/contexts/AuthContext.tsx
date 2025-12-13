@@ -19,29 +19,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
-    console.log('AuthContext useEffect: Initializing...');
-    
+    console.log('AuthContext useEffect: Initializing dummy data generation...');
     // Always attempt to generate dummy data if any essential part is missing
     generateAndStoreDummyData();
-
-    const storedUser = localStorage.getItem('currentUser');
-    console.log('AuthContext useEffect: Attempting to load currentUser from localStorage. Value:', storedUser);
-
-    if (storedUser) {
-      try {
-        const parsedUser: User = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setRole(parsedUser.role);
-        console.log(`AuthContext useEffect: Loaded current user: ${parsedUser.email} (${parsedUser.role}). User state set.`);
-      } catch (error) {
-        console.error('AuthContext useEffect: Error parsing currentUser from localStorage:', error);
-        localStorage.removeItem('currentUser'); // Clear invalid current user
-        console.log('AuthContext useEffect: Invalid currentUser removed from localStorage.');
-      }
-    } else {
-      console.log('AuthContext useEffect: No current user found in localStorage.');
-    }
-    console.log('AuthContext useEffect: Current user state after initial load:', user, 'Role:', role);
+    // The user state will now only be set by explicit login/register actions,
+    // not by attempting to load from localStorage on initial render.
+    console.log('AuthContext useEffect: Dummy data generation initiated. User state will be null until explicit login/register.');
   }, []); // Empty dependency array means this runs once on mount
 
   const login = (email: string, selectedRole: UserRole) => {
