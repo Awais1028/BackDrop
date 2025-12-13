@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Users, Search } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
   const { user, role } = useAuth();
@@ -78,48 +78,50 @@ const InventoryPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        <Users className="h-7 w-7 text-blue-500" /> Marketplace Inventory
-      </h1>
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0">
+        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+          <Users className="h-7 w-7 text-blue-500" /> Marketplace Inventory
+        </h1>
 
-      <Card className="mb-6">
-        <CardContent className="p-4 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search by script title or creator..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
-              }}
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <Select value={sortBy} onValueChange={(value) => {
-              setSortBy(value);
-              setCurrentPage(1); // Reset to first page on sort
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-desc">Newest First</SelectItem>
-                <SelectItem value="date-asc">Oldest First</SelectItem>
-                <SelectItem value="title-asc">Title (A-Z)</SelectItem>
-                <SelectItem value="title-desc">Title (Z-A)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+        <Card className="mb-6">
+          <CardContent className="p-4 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Search by script title or creator..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page on search
+                }}
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={sortBy} onValueChange={(value) => {
+                setSortBy(value);
+                setCurrentPage(1); // Reset to first page on sort
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Newest First</SelectItem>
+                  <SelectItem value="date-asc">Oldest First</SelectItem>
+                  <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+                  <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {paginatedScripts.length === 0 ? (
-        <p className="text-center text-gray-500 py-10">No scripts match your criteria.</p>
-      ) : (
-        <>
+      <div className="flex-1 overflow-y-auto pr-2">
+        {paginatedScripts.length === 0 ? (
+          <p className="text-center text-gray-500 py-10">No scripts match your criteria.</p>
+        ) : (
           <Accordion type="single" collapsible className="w-full">
             {paginatedScripts.map(script => {
               const scriptSlots = slots.filter(slot => slot.projectId === script.id);
@@ -160,40 +162,42 @@ const InventoryPage = () => {
               );
             })}
           </Accordion>
+        )}
+      </div>
 
-          {pageCount > 1 && (
-            <Pagination className="mt-6">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCurrentPage(prev => Math.max(1, prev - 1));
-                    }}
-                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="px-4 py-2 text-sm">
-                    Page {currentPage} of {pageCount}
-                  </span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCurrentPage(prev => Math.min(pageCount, prev + 1));
-                    }}
-                    className={currentPage === pageCount ? 'pointer-events-none opacity-50' : ''}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </>
-      )}
+      <div className="flex-shrink-0 pt-4">
+        {pageCount > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCurrentPage(prev => Math.max(1, prev - 1));
+                  }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-4 py-2 text-sm">
+                  Page {currentPage} of {pageCount}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCurrentPage(prev => Math.min(pageCount, prev + 1));
+                  }}
+                  className={currentPage === pageCount ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
+      </div>
     </div>
   );
 };
