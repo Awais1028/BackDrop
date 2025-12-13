@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.4'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '1.5'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -46,7 +46,24 @@ export const generateAndStoreDummyData = () => {
   const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const script3: ProjectScript = { id: uuidv4(), title: 'Untitled Sci-Fi Project', creatorId: creatorUser.id, docLink: 'https://example.com/script3.pdf', productionWindow: 'Q4 2025', budgetTarget: 500000, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const projectScripts: ProjectScript[] = [script1, script2, script3];
+
+  // --- Bulk Scripts for Pagination Demo ---
+  const bulkScripts: ProjectScript[] = [];
+  for (let i = 1; i <= 100; i++) {
+    bulkScripts.push({
+      id: uuidv4(),
+      title: `Bulk Script Project #${i}`,
+      creatorId: creatorUser.id,
+      docLink: `https://example.com/bulk-script-${i}.pdf`,
+      productionWindow: `Q${(i % 4) + 1} 2026`,
+      budgetTarget: 50000 + (i * 1000),
+      createdDate: new Date(new Date().getTime() - (i * 1000 * 60 * 60 * 24)).toISOString(), // Stagger creation dates
+      lastModifiedDate: new Date().toISOString(),
+    });
+  }
+  projectScripts.push(...bulkScripts);
   localStorage.setItem('projectScripts', JSON.stringify(projectScripts));
+
 
   // --- Integration Slots ---
   const slot1: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Opening Scene: Cafe', description: 'Character orders artisanal coffee.', constraints: 'Premium brands only', pricingFloor: 5000, modality: 'Private Auction', status: 'Available', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
@@ -54,7 +71,31 @@ export const generateAndStoreDummyData = () => {
   const slot3: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Lab Scene: Product Placement', description: 'Scientist uses lab equipment.', constraints: 'Ethical brands', pricingFloor: 8000, modality: 'Private Auction', status: 'Available', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const slot4: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Detective Office', description: 'Character drinks a specific energy drink.', constraints: 'No alcohol', pricingFloor: 7500, modality: 'PG/Reservation', status: 'Completed', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const integrationSlots: IntegrationSlot[] = [slot1, slot2, slot3, slot4];
+
+  // --- Bulk Slots for Pagination Demo ---
+  const bulkSlots: IntegrationSlot[] = [];
+  projectScripts.forEach(script => {
+    if (script.title.startsWith('Bulk Script')) {
+      const numSlots = Math.floor(Math.random() * 4) + 1; // 1 to 4 slots per script
+      for (let i = 1; i <= numSlots; i++) {
+        bulkSlots.push({
+          id: uuidv4(),
+          projectId: script.id,
+          sceneRef: `Scene ${i} in ${script.title}`,
+          description: `A generic integration opportunity for slot ${i}.`,
+          constraints: 'No specific constraints',
+          pricingFloor: 2000 + (i * 500),
+          modality: i % 2 === 0 ? 'Private Auction' : 'PG/Reservation',
+          status: 'Available',
+          createdDate: script.createdDate,
+          lastModifiedDate: new Date().toISOString(),
+        });
+      }
+    }
+  });
+  integrationSlots.push(...bulkSlots);
   localStorage.setItem('integrationSlots', JSON.stringify(integrationSlots));
+
 
   // --- SKUs (for Merchant) ---
   const skus: SKU[] = [
