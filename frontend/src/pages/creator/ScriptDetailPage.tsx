@@ -513,11 +513,11 @@ const ScriptDetailPage = () => {
                 ) : (
                   <div className="space-y-3">
                     {bids.filter(bid => bid.slotId === slot.id).map(bid => (
-                      <Card key={bid.id} className={`p-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 rounded-md border-l-4 shadow-sm ${getBidStatusStyle(bid.status).borderColor}`}>
+                      <Card key={bid.id} className={`p-3 bg-slate-800 dark:bg-slate-900 text-slate-50 rounded-md border-l-4 shadow-sm ${getBidStatusStyle(bid.status).borderColor}`}>
                         <CardTitle className="text-base flex items-center gap-1">
                           <Handshake className="h-4 w-4 text-purple-400" /> Bid from {usersMap.get(bid.counterpartyId) || 'Unknown Bidder'}
                         </CardTitle>
-                        <CardDescription className="text-xs">Submitted: {new Date(bid.createdDate).toLocaleDateString()}</CardDescription>
+                        <CardDescription className="text-xs text-slate-400">Submitted: {new Date(bid.createdDate).toLocaleDateString()}</CardDescription>
                         <CardContent className="p-0 mt-2 text-sm">
                           <p><strong>Objective:</strong> {bid.objective}</p>
                           <p><strong>Model:</strong> {bid.pricingModel}</p>
@@ -529,7 +529,7 @@ const ScriptDetailPage = () => {
                               <Button size="sm" onClick={() => handleAcceptBid(bid)}>
                                 <CheckCircle className="mr-1 h-4 w-4" /> Accept
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleDeclineBid(bid)}>
+                              <Button variant="secondary" size="sm" onClick={() => handleDeclineBid(bid)}>
                                 <XCircle className="mr-1 h-4 w-4" /> Decline
                               </Button>
                             </div>
