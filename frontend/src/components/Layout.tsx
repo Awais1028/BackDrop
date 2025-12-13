@@ -3,7 +3,7 @@ import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, LogOut, Home, Upload, Search, ShoppingBag, Settings, Users, DollarSign, BarChart, FileText } from 'lucide-react';
+import { Menu, LogOut, Search, ShoppingBag, Settings, Users, DollarSign, BarChart, FileText, Handshake } from 'lucide-react';
 import { MadeWithDyad } from './made-with-dyad';
 import { cn } from '@/lib/utils';
 
