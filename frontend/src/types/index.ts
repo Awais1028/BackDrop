@@ -34,6 +34,7 @@ export interface IntegrationSlot {
   pricingFloor: number;
   modality: "Private Auction" | "PG/Reservation";
   status: "Available" | "Locked" | "Completed";
+  visibility: "Public" | "Private"; // Added for Operator Curation
   createdDate: string;
   lastModifiedDate: string;
 }

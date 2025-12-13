@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BidReservation, IntegrationSlot, User } from '@/types';
+import { BidReservation, IntegrationSlot, User, ProjectScript, FinancingCommitment } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Settings, Search, ArrowUpDown } from 'lucide-react';
+import { Settings, Search, ArrowUpDown, Download } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type SortKey = 'slot' | 'counterparty' | 'amountTerms' | 'createdDate' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -20,8 +21,12 @@ const WorkflowMonitoringPage = () => {
   const navigate = useNavigate();
 
   const [bids, setBids] = useState<BidReservation[]>([]);
-  const [usersMap, setUsersMap] = useState<Map<string, string>>(new Map());
+  const [usersMap, setUsersMap] = useState<Map<string, User>>(new Map());
   const [slotsMap, setSlotsMap] = useState<Map<string, IntegrationSlot>>(new Map());
+  const [scriptsMap, setScriptsMap] = useState<Map<string, ProjectScript>>(new Map());
+  const [commitmentsMap, setCommitmentsMap] = useState<Map<string, FinancingCommitment>>(new Map());
+  
+  const [selectedDeal, setSelectedDeal] = useState<any>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'createdDate', direction: 'desc' });
@@ -36,22 +41,69 @@ const WorkflowMonitoringPage = () => {
     const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
     const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
     const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
+    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
+    const allCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
 
     setBids(allBids);
 
-    const uMap = new Map<string, string>();
-    allUsers.forEach(u => uMap.set(u.id, u.name));
+    const uMap = new Map<string, User>();
+    allUsers.forEach(u => uMap.set(u.id, u));
     setUsersMap(uMap);
 
     const sMap = new Map<string, IntegrationSlot>();
     allSlots.forEach(s => sMap.set(s.id, s));
     setSlotsMap(sMap);
+
+    const pMap = new Map<string, ProjectScript>();
+    allScripts.forEach(p => pMap.set(p.id, p));
+    setScriptsMap(pMap);
+
+    const cMap = new Map<string, FinancingCommitment>();
+    allCommitments.forEach(c => cMap.set(c.bidId, c));
+    setCommitmentsMap(cMap);
+
   }, [user, role, navigate]);
+
+  const handleExport = (bid: BidReservation) => {
+    const slot = slotsMap.get(bid.slotId);
+    const project = slot ? scriptsMap.get(slot.projectId) : null;
+    const creator = project ? usersMap.get(project.creatorId) : null;
+    const counterparty = usersMap.get(bid.counterpartyId);
+    const commitment = commitmentsMap.get(bid.id);
+
+    const evidencePack = {
+      dealId: bid.id,
+      status: bid.status,
+      script: {
+        title: project?.title,
+        creator: creator?.name,
+      },
+      slot: {
+        sceneRef: slot?.sceneRef,
+        description: slot?.description,
+        pricingFloor: slot?.pricingFloor,
+      },
+      bid: {
+        counterparty: counterparty?.name,
+        objective: bid.objective,
+        pricingModel: bid.pricingModel,
+        terms: bid.amountTerms,
+        flightWindow: bid.flightWindow,
+        submittedDate: bid.createdDate,
+      },
+      commitment: {
+        amount: commitment?.committedAmount,
+        createdDate: commitment?.createdDate,
+      },
+      dealMemoLink: `https://example.com/deal-memo/${bid.id}.pdf`
+    };
+    setSelectedDeal(evidencePack);
+  };
 
   const getValue = (bid: BidReservation, key: SortKey) => {
     switch (key) {
       case 'slot': return slotsMap.get(bid.slotId)?.sceneRef || '';
-      case 'counterparty': return usersMap.get(bid.counterpartyId) || '';
+      case 'counterparty': return usersMap.get(bid.counterpartyId)?.name || '';
       case 'amountTerms': return parseFloat(bid.amountTerms.replace(/[^0-9.-]+/g, "")) || 0;
       case 'createdDate': return new Date(bid.createdDate).getTime();
       case 'status': return bid.status;
@@ -61,7 +113,7 @@ const WorkflowMonitoringPage = () => {
   const processedBids = useMemo(() => {
     let filteredBids = bids.filter(bid => {
       const slotName = slotsMap.get(bid.slotId)?.sceneRef || '';
-      const counterpartyName = usersMap.get(bid.counterpartyId) || '';
+      const counterpartyName = usersMap.get(bid.counterpartyId)?.name || '';
       const searchLower = searchTerm.toLowerCase();
 
       return (
@@ -120,89 +172,115 @@ const WorkflowMonitoringPage = () => {
   );
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-shrink-0">
-        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-          <Settings className="h-7 w-7 text-green-500" /> Workflow Monitoring
-        </h1>
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search by slot, counterparty, terms, or status..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <Dialog onOpenChange={() => setSelectedDeal(null)}>
+      <div className="flex flex-col h-full">
+        <div className="flex-shrink-0">
+          <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+            <Settings className="h-7 w-7 text-green-500" /> Workflow Monitoring
+          </h1>
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search by slot, counterparty, terms, or status..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <div className="flex-1 overflow-y-auto pr-2">
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableHeader sortKey="slot">Slot</SortableHeader>
-                  <SortableHeader sortKey="counterparty">Counterparty</SortableHeader>
-                  <SortableHeader sortKey="amountTerms">Terms</SortableHeader>
-                  <SortableHeader sortKey="createdDate">Date Submitted</SortableHeader>
-                  <SortableHeader sortKey="status">Status</SortableHeader>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedBids.map(bid => (
-                  <TableRow key={bid.id}>
-                    <TableCell>{slotsMap.get(bid.slotId)?.sceneRef || 'Unknown Slot'}</TableCell>
-                    <TableCell>{usersMap.get(bid.counterpartyId) || 'Unknown User'}</TableCell>
-                    <TableCell>{bid.amountTerms}</TableCell>
-                    <TableCell>{new Date(bid.createdDate).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(bid.status)}>{bid.status}</Badge>
-                    </TableCell>
+        <div className="flex-1 overflow-y-auto pr-2">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableHeader sortKey="slot">Slot</SortableHeader>
+                    <SortableHeader sortKey="counterparty">Counterparty</SortableHeader>
+                    <SortableHeader sortKey="amountTerms">Terms</SortableHeader>
+                    <SortableHeader sortKey="createdDate">Date Submitted</SortableHeader>
+                    <SortableHeader sortKey="status">Status</SortableHeader>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-             {paginatedBids.length === 0 && (
-              <p className="text-center text-gray-500 py-10">No bids match your criteria.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedBids.map(bid => (
+                    <TableRow key={bid.id}>
+                      <TableCell>{slotsMap.get(bid.slotId)?.sceneRef || 'Unknown Slot'}</TableCell>
+                      <TableCell>{usersMap.get(bid.counterpartyId)?.name || 'Unknown User'}</TableCell>
+                      <TableCell>{bid.amountTerms}</TableCell>
+                      <TableCell>{new Date(bid.createdDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(bid.status)}>{bid.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(bid.status === 'Accepted' || bid.status === 'Committed') && (
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => handleExport(bid)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+               {paginatedBids.length === 0 && (
+                <p className="text-center text-gray-500 py-10">No bids match your criteria.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-      <div className="flex-shrink-0 pt-4">
-        {pageCount > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)); }}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-4 py-2 text-sm">Page {currentPage} of {pageCount}</span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(pageCount, p + 1)); }}
-                  className={currentPage === pageCount ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
+        <div className="flex-shrink-0 pt-4">
+          {pageCount > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)); }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-4 py-2 text-sm">Page {currentPage} of {pageCount}</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(pageCount, p + 1)); }}
+                    className={currentPage === pageCount ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
       </div>
-    </div>
+      
+      {selectedDeal && (
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Evidence Pack Export</DialogTitle>
+            <DialogDescription>
+              A summary of all information related to this deal. In a real application, this would be a downloadable file.
+            </DialogDescription>
+          </DialogHeader>
+          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4 overflow-x-auto">
+            <code className="text-white">{JSON.stringify(selectedDeal, null, 2)}</code>
+          </pre>
+        </DialogContent>
+      )}
+    </Dialog>
   );
 };
 

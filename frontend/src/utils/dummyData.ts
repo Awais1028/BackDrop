@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.5'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '1.6'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -66,10 +66,10 @@ export const generateAndStoreDummyData = () => {
 
 
   // --- Integration Slots ---
-  const slot1: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Opening Scene: Cafe', description: 'Character orders artisanal coffee.', constraints: 'Premium brands only', pricingFloor: 5000, modality: 'Private Auction', status: 'Available', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const slot2: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Climax: Rooftop Chase', description: 'Protagonist uses a high-tech gadget.', constraints: 'Tech brands, no firearms', pricingFloor: 12000, modality: 'PG/Reservation', status: 'Locked', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const slot3: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Lab Scene: Product Placement', description: 'Scientist uses lab equipment.', constraints: 'Ethical brands', pricingFloor: 8000, modality: 'Private Auction', status: 'Available', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const slot4: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Detective Office', description: 'Character drinks a specific energy drink.', constraints: 'No alcohol', pricingFloor: 7500, modality: 'PG/Reservation', status: 'Completed', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot1: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Opening Scene: Cafe', description: 'Character orders artisanal coffee.', constraints: 'Premium brands only', pricingFloor: 5000, modality: 'Private Auction', status: 'Available', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot2: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Climax: Rooftop Chase', description: 'Protagonist uses a high-tech gadget.', constraints: 'Tech brands, no firearms', pricingFloor: 12000, modality: 'PG/Reservation', status: 'Locked', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot3: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Lab Scene: Product Placement', description: 'Scientist uses lab equipment.', constraints: 'Ethical brands', pricingFloor: 8000, modality: 'Private Auction', status: 'Available', visibility: 'Private', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const slot4: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Detective Office', description: 'Character drinks a specific energy drink.', constraints: 'No alcohol', pricingFloor: 7500, modality: 'PG/Reservation', status: 'Completed', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const integrationSlots: IntegrationSlot[] = [slot1, slot2, slot3, slot4];
 
   // --- Bulk Slots for Pagination Demo ---
@@ -87,6 +87,7 @@ export const generateAndStoreDummyData = () => {
           pricingFloor: 2000 + (i * 500),
           modality: i % 2 === 0 ? 'Private Auction' : 'PG/Reservation',
           status: 'Available',
+          visibility: 'Public',
           createdDate: script.createdDate,
           lastModifiedDate: new Date().toISOString(),
         });

@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Users, Search } from 'lucide-react';
+import { Users, Search, Eye, EyeOff } from 'lucide-react';
+import { showSuccess } from '@/utils/toast';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -41,6 +42,18 @@ const InventoryPage = () => {
     allUsers.forEach(u => map.set(u.id, u.name));
     setUsersMap(map);
   }, [user, role, navigate]);
+
+  const handleVisibilityChange = (slotId: string, newVisibility: IntegrationSlot['visibility']) => {
+    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
+    const updatedSlots = allSlots.map(slot => 
+      slot.id === slotId 
+        ? { ...slot, visibility: newVisibility, lastModifiedDate: new Date().toISOString() } 
+        : slot
+    );
+    localStorage.setItem('integrationSlots', JSON.stringify(updatedSlots));
+    setSlots(updatedSlots);
+    showSuccess(`Slot visibility updated to ${newVisibility}.`);
+  };
 
   const processedScripts = useMemo(() => {
     let filtered = scripts.filter(script =>
@@ -152,6 +165,21 @@ const InventoryPage = () => {
                             <CardContent>
                               <p className="text-sm"><strong>Pricing Floor:</strong> ${slot.pricingFloor.toLocaleString()}</p>
                               <p className="text-sm"><strong>Modality:</strong> {slot.modality}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Label htmlFor={`visibility-${slot.id}`} className="text-sm font-medium">Visibility:</Label>
+                                <Select
+                                  value={slot.visibility}
+                                  onValueChange={(value: IntegrationSlot['visibility']) => handleVisibilityChange(slot.id, value)}
+                                >
+                                  <SelectTrigger id={`visibility-${slot.id}`} className="w-[120px]">
+                                    <SelectValue placeholder="Set visibility" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Public"><div className="flex items-center gap-2"><Eye className="h-4 w-4" /> Public</div></SelectItem>
+                                    <SelectItem value="Private"><div className="flex items-center gap-2"><EyeOff className="h-4 w-4" /> Private</div></SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </CardContent>
                           </Card>
                         ))}
