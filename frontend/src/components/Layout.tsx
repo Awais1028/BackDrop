@@ -134,6 +134,9 @@ const Layout = ({ children }: { children: ReactNode }) => {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">
+          {/* TEMPORARY LAYOUT TEST MESSAGE */}
+          <div className="text-red-500 text-3xl font-bold mb-4">LAYOUT IS RENDERING ITS CHILDREN!</div>
+          {/* END TEMPORARY LAYOUT TEST MESSAGE */}
           {children}
         </main>
       </div>
