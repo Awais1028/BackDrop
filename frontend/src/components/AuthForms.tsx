@@ -141,3 +141,55 @@ export const RegisterForm = () => {
     </Card>
   );
 };
+
+export const OperatorLoginForm = () => {
+  const [email, setEmail] = useState('operator@example.com');
+  const [password, setPassword] = useState('password123');
+  const { login } = useAuth();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email && password) {
+      login(email, password);
+    } else {
+      alert('Please enter your email and password.');
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-2xl">Operator Login</CardTitle>
+        <CardDescription>Enter your operator credentials to access the console.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Operator Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="operator@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            Sign In as Operator
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
