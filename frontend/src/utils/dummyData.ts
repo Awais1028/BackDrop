@@ -32,14 +32,9 @@ export const generateAndStoreDummyData = () => {
 
   console.log('generateAndStoreDummyData: Dummy data is missing or incomplete. Generating new dummy data.');
 
-  // Clear existing data to ensure a clean slate for regeneration
-  localStorage.removeItem('users');
-  localStorage.removeItem('projectScripts');
-  localStorage.removeItem('integrationSlots');
-  localStorage.removeItem('skus');
-  localStorage.removeItem('bidReservations');
-  localStorage.removeItem('financingCommitments');
-  localStorage.removeItem('currentUser'); // Also clear current user to avoid conflicts
+  // --- FORCE CLEAR ALL LOCAL STORAGE IF REGENERATING ---
+  localStorage.clear(); 
+  console.log('generateAndStoreDummyData: localStorage cleared before regenerating dummy data.');
 
   // --- Users ---
   const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
@@ -49,6 +44,7 @@ export const generateAndStoreDummyData = () => {
 
   const users: User[] = [creatorUser, advertiserUser, merchantUser, operatorUser];
   localStorage.setItem('users', JSON.stringify(users));
+  console.log('generateAndStoreDummyData: Stored users:', users);
 
   // --- Project Scripts (for Creator) ---
   const script1: ProjectScript = {
@@ -75,6 +71,7 @@ export const generateAndStoreDummyData = () => {
 
   const projectScripts: ProjectScript[] = [script1, script2];
   localStorage.setItem('projectScripts', JSON.stringify(projectScripts));
+  console.log('generateAndStoreDummyData: Stored projectScripts:', projectScripts);
 
   // --- Integration Slots (for Creator's scripts) ---
   const slot1_script1: IntegrationSlot = {
@@ -118,6 +115,7 @@ export const generateAndStoreDummyData = () => {
 
   const integrationSlots: IntegrationSlot[] = [slot1_script1, slot2_script1, slot3_script2];
   localStorage.setItem('integrationSlots', JSON.stringify(integrationSlots));
+  console.log('generateAndStoreDummyData: Stored integrationSlots:', integrationSlots);
 
   // --- SKUs (for Merchant) ---
   const sku1: SKU = {
@@ -144,6 +142,7 @@ export const generateAndStoreDummyData = () => {
 
   const skus: SKU[] = [sku1, sku2];
   localStorage.setItem('skus', JSON.stringify(skus));
+  console.log('generateAndStoreDummyData: Stored SKUs:', skus);
 
   // --- Bid Reservations ---
   const bid1_advertiser_slot1: BidReservation = {
@@ -205,6 +204,7 @@ export const generateAndStoreDummyData = () => {
     bid4_merchant_slot3,
   ];
   localStorage.setItem('bidReservations', JSON.stringify(bidReservations));
+  console.log('generateAndStoreDummyData: Stored bidReservations:', bidReservations);
 
   // --- Financing Commitments (for accepted bids) ---
   const commitment1: FinancingCommitment = {
@@ -220,6 +220,7 @@ export const generateAndStoreDummyData = () => {
 
   const financingCommitments: FinancingCommitment[] = [commitment1];
   localStorage.setItem('financingCommitments', JSON.stringify(financingCommitments));
+  console.log('generateAndStoreDummyData: Stored financingCommitments:', financingCommitments);
 
   // --- Update slot status for accepted bids ---
   const updatedSlotsForCommitment = integrationSlots.map(slot => {
@@ -229,6 +230,7 @@ export const generateAndStoreDummyData = () => {
     return slot;
   });
   localStorage.setItem('integrationSlots', JSON.stringify(updatedSlotsForCommitment));
+  console.log('generateAndStoreDummyData: Updated integrationSlots with locked status:', updatedSlotsForCommitment);
 
 
   console.log('generateAndStoreDummyData: Dummy data generation complete. You can now log in with:');
