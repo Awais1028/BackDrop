@@ -65,10 +65,6 @@ const MyScriptsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      {/* TEMPORARY MY SCRIPTS PAGE TEST MESSAGE */}
-      <div className="text-blue-500 text-3xl font-bold mb-4">MY SCRIPTS PAGE IS RENDERING!</div>
-      {/* END TEMPORARY MY SCRIPTS PAGE TEST MESSAGE */}
-
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Scripts</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -130,7 +126,11 @@ const MyScriptsPage = () => {
       </div>
 
       {scripts.length === 0 ? (
-        <p className="text-center text-gray-500 dark:text-gray-400">No scripts uploaded yet. Click "Upload New Script" to get started!</p>
+        <div className="flex flex-col items-center justify-center h-[60vh] bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+          <FileText className="h-16 w-16 text-gray-400 mb-4" />
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No scripts uploaded yet.</p>
+          <p className="text-md text-gray-500 dark:text-gray-400">Click "Upload New Script" to get started and see your projects here!</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {scripts.map((script) => (

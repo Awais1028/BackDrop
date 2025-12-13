@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ProjectScript, IntegrationSlot, FinancingCommitment } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, TrendingUp, Percent } from 'lucide-react';
+import { DollarSign, TrendingUp, Percent, FileText } from 'lucide-react'; // Added FileText icon
 import { useNavigate } from 'react-router-dom';
 
 const FinancingDashboardPage = () => {
@@ -102,7 +102,11 @@ const FinancingDashboardPage = () => {
 
       <h2 className="text-2xl font-semibold mb-4">Your Projects Overview</h2>
       {scripts.length === 0 ? (
-        <p className="text-center text-gray-500 dark:text-gray-400">No scripts with budget targets found. Upload a script and set a budget to see financing impact.</p>
+        <div className="flex flex-col items-center justify-center h-[40vh] bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+          <FileText className="h-16 w-16 text-gray-400 mb-4" />
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No scripts with budget targets found.</p>
+          <p className="text-md text-gray-500 dark:text-gray-400">Upload a script and set a budget to see financing impact here.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {scripts.map(script => {

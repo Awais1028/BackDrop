@@ -7,10 +7,6 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      {/* Temporary Test Message - REMOVE LATER */}
-      <div className="text-red-500 text-2xl font-bold mb-4">AUTH PAGE IS RENDERING!</div>
-      {/* End Temporary Test Message */}
-
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">quick-otter-bounce</h1>
       </div>
