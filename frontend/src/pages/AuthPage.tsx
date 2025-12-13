@@ -29,7 +29,7 @@ const AuthPage = () => {
             )}
           >
             <User className="h-4 w-4" />
-            User Login
+            {authMode === 'user' && !isLogin ? 'User Registration' : 'User Login'}
           </button>
           <button
             onClick={() => setAuthMode('operator')}
