@@ -7,7 +7,7 @@ const Header = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex-shrink-0">
+    <header className="flex items-center justify-between p-4 bg-card border-b">
       <div>
         <h1 className="text-lg font-semibold">Welcome, {user?.name || 'Guest'}</h1>
       </div>
