@@ -21,6 +21,8 @@ const MyScriptsPage = () => {
   const [newScriptProductionWindow, setNewScriptProductionWindow] = useState('');
   const [newScriptBudgetTarget, setNewScriptBudgetTarget] = useState<number | ''>('');
 
+  console.log('MyScriptsPage render: user:', user, 'scripts state:', scripts); // Added log
+
   useEffect(() => {
     console.log('MyScriptsPage useEffect: Current user:', user);
     if (user) {

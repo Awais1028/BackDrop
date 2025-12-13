@@ -15,6 +15,8 @@ const FinancingDashboardPage = () => {
   const [percentageCovered, setPercentageCovered] = useState(0);
   const [scripts, setScripts] = useState<ProjectScript[]>([]);
 
+  console.log('FinancingDashboardPage render: user:', user, 'scripts state:', scripts, 'totalBudgetTarget state:', totalBudgetTarget); // Added log
+
   useEffect(() => {
     console.log('FinancingDashboardPage useEffect: Current user:', user);
     if (!user || user.role !== 'Creator') {
@@ -26,7 +28,7 @@ const FinancingDashboardPage = () => {
     const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
     const creatorScripts = storedScripts.filter(script => script.creatorId === user.id);
     setScripts(creatorScripts);
-    console.log('FinancingDashboardPage useEffect: Creator scripts:', creatorScripts);
+    console.log('FinancingDashboardPage useEffect: Creator scripts (from localStorage):', creatorScripts);
 
     let currentTotalBudgetTarget = 0;
     creatorScripts.forEach(script => {
@@ -35,7 +37,7 @@ const FinancingDashboardPage = () => {
       }
     });
     setTotalBudgetTarget(currentTotalBudgetTarget);
-    console.log('FinancingDashboardPage useEffect: Total budget target:', currentTotalBudgetTarget);
+    console.log('FinancingDashboardPage useEffect: Total budget target (calculated):', currentTotalBudgetTarget);
 
 
     const storedSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
@@ -57,7 +59,7 @@ const FinancingDashboardPage = () => {
       currentTotalCommittedAmount += commitment.committedAmount;
     });
     setTotalCommittedAmount(currentTotalCommittedAmount);
-    console.log('FinancingDashboardPage useEffect: Total committed amount:', currentTotalCommittedAmount);
+    console.log('FinancingDashboardPage useEffect: Total committed amount (calculated):', currentTotalCommittedAmount);
 
 
     if (currentTotalBudgetTarget > 0) {
