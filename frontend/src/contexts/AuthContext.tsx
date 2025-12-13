@@ -7,6 +7,7 @@ import { toast } from 'sonner'; // Import toast for notifications
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
+  isLoading: boolean; // Add isLoading state
   login: (email: string, role: UserRole) => void;
   logout: () => void;
   register: (name: string, email: string, role: UserRole) => void;
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Initialize isLoading to true
 
   useEffect(() => {
     console.log('AuthContext useEffect: Initializing...');
@@ -41,7 +43,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       console.log('AuthContext useEffect: No current user found in localStorage.');
     }
-    console.log('AuthContext useEffect: Current user state after initial load:', user, 'Role:', role);
+    setIsLoading(false); // Set loading to false after initial check
+    console.log('AuthContext useEffect: Current user state after initial load:', user, 'Role:', role, 'isLoading:', isLoading);
   }, []); // Empty dependency array means this runs once on mount
 
   const login = (email: string, selectedRole: UserRole) => {
@@ -100,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, register }}>
+    <AuthContext.Provider value={{ user, role, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
