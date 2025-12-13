@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProjectScript, IntegrationSlot } from '@/types';
+import { ProjectScript, IntegrationSlot, BidReservation, FinancingCommitment } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import { FileText, PlusCircle, Tag, Edit, Trash2, Bot } from 'lucide-react';
+import { FileText, PlusCircle, Tag, Edit, Trash2, Bot, CheckCircle, XCircle, DollarSign, Calendar, Handshake } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 const ScriptDetailPage = () => {
@@ -20,6 +20,7 @@ const ScriptDetailPage = () => {
 
   const [script, setScript] = useState<ProjectScript | null>(null);
   const [slots, setSlots] = useState<IntegrationSlot[]>([]);
+  const [bids, setBids] = useState<BidReservation[]>([]); // All bids for this script's slots
   const [isSlotDialogOpen, setIsSlotDialogOpen] = useState(false);
   const [isEditScriptDialogOpen, setIsEditScriptDialogOpen] = useState(false);
 
@@ -48,7 +49,12 @@ const ScriptDetailPage = () => {
     if (foundScript) {
       setScript(foundScript);
       const storedSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-      setSlots(storedSlots.filter(slot => slot.projectId === foundScript.id));
+      const scriptSlots = storedSlots.filter(slot => slot.projectId === foundScript.id);
+      setSlots(scriptSlots);
+
+      const storedBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+      const scriptBids = storedBids.filter(bid => scriptSlots.some(slot => slot.id === bid.slotId));
+      setBids(scriptBids);
 
       // Initialize edit script form state
       setEditScriptTitle(foundScript.title);
@@ -60,6 +66,33 @@ const ScriptDetailPage = () => {
       navigate('/creator/scripts');
     }
   }, [scriptId, user, navigate]);
+
+  const updateLocalStorageAndState = (
+    updatedScripts: ProjectScript[],
+    updatedSlots: IntegrationSlot[],
+    updatedBids: BidReservation[],
+    updatedCommitments: FinancingCommitment[]
+  ) => {
+    localStorage.setItem('projectScripts', JSON.stringify(updatedScripts));
+    localStorage.setItem('integrationSlots', JSON.stringify(updatedSlots));
+    localStorage.setItem('bidReservations', JSON.stringify(updatedBids));
+    localStorage.setItem('financingCommitments', JSON.stringify(updatedCommitments));
+
+    // Re-fetch and set state based on updated localStorage
+    if (user && scriptId) {
+      const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
+      const foundScript = storedScripts.find(s => s.id === scriptId && s.creatorId === user.id);
+      if (foundScript) {
+        setScript(foundScript);
+        const storedSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
+        const scriptSlots = storedSlots.filter(slot => slot.projectId === foundScript.id);
+        setSlots(scriptSlots);
+        const storedBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+        const scriptBids = storedBids.filter(bid => scriptSlots.some(slot => slot.id === bid.slotId));
+        setBids(scriptBids);
+      }
+    }
+  };
 
   const handleAddSlot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,9 +120,14 @@ const ScriptDetailPage = () => {
 
     const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
     allSlots.push(newSlot);
-    localStorage.setItem('integrationSlots', JSON.stringify(allSlots));
 
-    setSlots(prev => [...prev, newSlot]);
+    updateLocalStorageAndState(
+      JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+      allSlots,
+      JSON.parse(localStorage.getItem('bidReservations') || '[]'),
+      JSON.parse(localStorage.getItem('financingCommitments') || '[]')
+    );
+
     showSuccess('Integration slot added successfully!');
     setIsSlotDialogOpen(false);
     // Reset form
@@ -122,9 +160,14 @@ const ScriptDetailPage = () => {
 
     const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
     const updatedScripts = allScripts.map(s => s.id === script.id ? updatedScript : s);
-    localStorage.setItem('projectScripts', JSON.stringify(updatedScripts));
 
-    setScript(updatedScript);
+    updateLocalStorageAndState(
+      updatedScripts,
+      JSON.parse(localStorage.getItem('integrationSlots') || '[]'),
+      JSON.parse(localStorage.getItem('bidReservations') || '[]'),
+      JSON.parse(localStorage.getItem('financingCommitments') || '[]')
+    );
+
     showSuccess('Script updated successfully!');
     setIsEditScriptDialogOpen(false);
   };
@@ -135,33 +178,125 @@ const ScriptDetailPage = () => {
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete the script "${script.title}"? This will also delete all associated integration slots.`)) {
+    if (window.confirm(`Are you sure you want to delete the script "${script.title}"? This will also delete all associated integration slots and bids.`)) {
       const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
       const filteredScripts = allScripts.filter(s => s.id !== script.id);
-      localStorage.setItem('projectScripts', JSON.stringify(filteredScripts));
 
       const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
       const filteredSlots = allSlots.filter(s => s.projectId !== script.id);
-      localStorage.setItem('integrationSlots', JSON.stringify(filteredSlots));
 
-      showSuccess('Script and all associated slots deleted successfully!');
+      const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+      const filteredBids = allBids.filter(bid => !slots.some(slot => slot.id === bid.slotId));
+
+      const allCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
+      const filteredCommitments = allCommitments.filter(c => !slots.some(slot => slot.id === c.slotId));
+
+      updateLocalStorageAndState(filteredScripts, filteredSlots, filteredBids, filteredCommitments);
+
+      showSuccess('Script and all associated data deleted successfully!');
       navigate('/creator/scripts');
     }
   };
 
   const handleDeleteSlot = (slotId: string, slotDescription: string) => {
-    if (window.confirm(`Are you sure you want to delete the integration slot "${slotDescription}"?`)) {
+    if (window.confirm(`Are you sure you want to delete the integration slot "${slotDescription}"? This will also delete any associated bids and commitments.`)) {
       const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
       const filteredSlots = allSlots.filter(s => s.id !== slotId);
-      localStorage.setItem('integrationSlots', JSON.stringify(filteredSlots));
-      setSlots(filteredSlots);
-      showSuccess('Integration slot deleted successfully!');
+
+      const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+      const filteredBids = allBids.filter(bid => bid.slotId !== slotId);
+
+      const allCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
+      const filteredCommitments = allCommitments.filter(c => c.slotId !== slotId);
+
+      updateLocalStorageAndState(
+        JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+        filteredSlots,
+        filteredBids,
+        filteredCommitments
+      );
+      showSuccess('Integration slot and associated data deleted successfully!');
     }
   };
 
   const handleAISuggestions = () => {
     showSuccess('AI is analyzing your script for suggestions... (This is a prototype placeholder)');
     // In a real application, this would trigger an API call to an LLM
+  };
+
+  const handleAcceptBid = (bid: BidReservation) => {
+    if (!user || !script) {
+      showError('User or script not loaded.');
+      return;
+    }
+
+    // 1. Update Bid status to 'Accepted'
+    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+    const updatedBids = allBids.map(b =>
+      b.id === bid.id ? { ...b, status: 'Accepted', lastModifiedDate: new Date().toISOString() } : b
+    );
+
+    // 2. Update Slot status to 'Locked'
+    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
+    const updatedSlots = allSlots.map(s =>
+      s.id === bid.slotId ? { ...s, status: 'Locked', lastModifiedDate: new Date().toISOString() } : s
+    );
+
+    // 3. Create Financing Commitment (simplified for prototype)
+    const newCommitment: FinancingCommitment = {
+      id: uuidv4(),
+      slotId: bid.slotId,
+      bidId: bid.id,
+      counterpartyId: bid.counterpartyId,
+      committedAmount: parseFloat(bid.amountTerms.replace(/[^0-9.-]+/g,"")) || 0, // Extract number from amountTerms
+      paidDeposit: false, // Stub
+      schedule: 'Upon deal memo signature', // Stub
+      createdDate: new Date().toISOString(),
+    };
+    const allCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
+    allCommitments.push(newCommitment);
+
+    // 4. Simulate Deal Memo Generation
+    const dealMemoLink = `https://example.com/deal-memo/${uuidv4()}.pdf`; // Placeholder link
+    showSuccess(`Bid accepted! Deal memo generated: ${dealMemoLink}`);
+
+    updateLocalStorageAndState(
+      JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+      updatedSlots,
+      updatedBids,
+      allCommitments
+    );
+  };
+
+  const handleDeclineBid = (bid: BidReservation) => {
+    if (!user) {
+      showError('User not loaded.');
+      return;
+    }
+
+    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+    const updatedBids = allBids.map(b =>
+      b.id === bid.id ? { ...b, status: 'Declined', lastModifiedDate: new Date().toISOString() } : b
+    );
+
+    updateLocalStorageAndState(
+      JSON.parse(localStorage.getItem('projectScripts') || '[]'),
+      JSON.parse(localStorage.getItem('integrationSlots') || '[]'),
+      updatedBids,
+      JSON.parse(localStorage.getItem('financingCommitments') || '[]')
+    );
+    showSuccess('Bid declined.');
+  };
+
+  const getBidStatusColor = (status: BidReservation['status']) => {
+    switch (status) {
+      case 'Pending': return 'text-yellow-500';
+      case 'Accepted': return 'text-green-500';
+      case 'Committed': return 'text-blue-500';
+      case 'Declined':
+      case 'Cancelled': return 'text-red-500';
+      default: return 'text-gray-500';
+    }
   };
 
   if (!script) {
@@ -353,15 +488,51 @@ const ScriptDetailPage = () => {
                     <strong>Constraints:</strong> {slot.constraints}
                   </p>
                 )}
+                <p className={`text-sm font-semibold mt-2 ${slot.status === 'Locked' ? 'text-blue-500' : 'text-gray-500'}`}>
+                  Status: {slot.status}
+                </p>
                 <div className="flex gap-2 mt-2">
                   {/* Future: Add Edit Slot functionality */}
-                  <Button variant="outline" size="sm" onClick={() => showSuccess('Edit slot functionality coming soon!')}>
+                  <Button variant="outline" size="sm" onClick={() => showError('Editing slots is coming soon!')}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeleteSlot(slot.id, slot.description)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
+
+                <h3 className="text-lg font-semibold mt-4 mb-2">Bids for this Slot:</h3>
+                {bids.filter(bid => bid.slotId === slot.id).length === 0 ? (
+                  <p className="text-sm text-gray-500">No bids yet for this slot.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {bids.filter(bid => bid.slotId === slot.id).map(bid => (
+                      <Card key={bid.id} className="p-3 bg-gray-50 dark:bg-gray-800">
+                        <CardTitle className="text-base flex items-center gap-1">
+                          <Handshake className="h-4 w-4 text-purple-400" /> Bid from {bid.counterpartyId.substring(0, 8)}...
+                        </CardTitle>
+                        <CardDescription className="text-xs">Submitted: {new Date(bid.createdDate).toLocaleDateString()}</CardDescription>
+                        <CardContent className="p-0 mt-2 text-sm">
+                          <p><strong>Objective:</strong> {bid.objective}</p>
+                          <p><strong>Model:</strong> {bid.pricingModel}</p>
+                          <p><strong>Terms:</strong> {bid.amountTerms}</p>
+                          <p><strong>Flight:</strong> {bid.flightWindow}</p>
+                          <p className={`font-semibold ${getBidStatusColor(bid.status)}`}>Status: {bid.status}</p>
+                          {bid.status === 'Pending' && (
+                            <div className="flex gap-2 mt-3">
+                              <Button size="sm" onClick={() => handleAcceptBid(bid)}>
+                                <CheckCircle className="mr-1 h-4 w-4" /> Accept
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleDeclineBid(bid)}>
+                                <XCircle className="mr-1 h-4 w-4" /> Decline
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
