@@ -513,7 +513,7 @@ const ScriptDetailPage = () => {
                 ) : (
                   <div className="space-y-3">
                     {bids.filter(bid => bid.slotId === slot.id).map(bid => (
-                      <Card key={bid.id} className={`p-3 bg-slate-50 dark:bg-slate-800/60 rounded-md border-l-4 shadow-sm ${getBidStatusStyle(bid.status).borderColor}`}>
+                      <Card key={bid.id} className={`p-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 rounded-md border-l-4 shadow-sm ${getBidStatusStyle(bid.status).borderColor}`}>
                         <CardTitle className="text-base flex items-center gap-1">
                           <Handshake className="h-4 w-4 text-purple-400" /> Bid from {usersMap.get(bid.counterpartyId) || 'Unknown Bidder'}
                         </CardTitle>
