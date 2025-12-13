@@ -15,6 +15,9 @@ import FinancingDashboardPage from "./pages/creator/FinancingDashboardPage";
 import DiscoverOpportunitiesPage from "./pages/buyer/DiscoverOpportunitiesPage";
 import MyBidsReservationsPage from "./pages/buyer/MyBidsReservationsPage";
 import MyProductsPage from "./pages/merchant/MyProductsPage";
+import InventoryPage from "./pages/operator/InventoryPage";
+import WorkflowMonitoringPage from "./pages/operator/WorkflowMonitoringPage";
+import FinancingPage from "./pages/operator/FinancingPage";
 
 const queryClient = new QueryClient();
 
@@ -32,8 +35,8 @@ const App = () => (
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
               
-              {/* Protected Creator & Operator Routes */}
-              <Route element={<ProtectedRoute allowedRoles={["Creator", "Operator"]} />}>
+              {/* Protected Creator Routes */}
+              <Route element={<ProtectedRoute allowedRoles={["Creator"]} />}>
                 <Route path="/creator/scripts" element={<MyScriptsPage />} />
                 <Route path="/creator/scripts/:scriptId" element={<ScriptDetailPage />} />
                 <Route path="/creator/dashboard" element={<FinancingDashboardPage />} />
@@ -50,12 +53,12 @@ const App = () => (
                 <Route path="/merchant/products" element={<MyProductsPage />} />
               </Route>
 
-              {/* Protected Operator Routes (Add specific operator pages here later) */}
-              {/* 
+              {/* Protected Operator Routes */}
               <Route element={<ProtectedRoute allowedRoles={["Operator"]} />}>
-                <Route path="/operator/inventory" element={<InventoryPage />} /> 
-              </Route> 
-              */}
+                <Route path="/operator/inventory" element={<InventoryPage />} />
+                <Route path="/operator/workflow" element={<WorkflowMonitoringPage />} />
+                <Route path="/operator/financing" element={<FinancingPage />} />
+              </Route>
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

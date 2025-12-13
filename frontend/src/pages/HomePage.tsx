@@ -31,8 +31,7 @@ const HomePage = () => {
           navigate('/discover', { replace: true }); // Both go to discover opportunities
           break;
         case 'Operator':
-          // navigate('/operator/inventory', { replace: true }); // Placeholder for operator dashboard
-          navigate('/creator/scripts', { replace: true }); // For now, redirect operator to creator scripts as a fallback
+          navigate('/operator/inventory', { replace: true }); // Redirect operator to their new inventory page
           break;
         default:
           console.warn('HomePage useEffect: Unknown role, redirecting to login.');
