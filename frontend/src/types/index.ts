@@ -53,6 +53,13 @@ export interface SKU {
   lastModifiedDate: string;
 }
 
+export interface Comment {
+  id: string;
+  authorId: string;
+  text: string;
+  timestamp: string;
+}
+
 export interface BidReservation {
   id: string;
   counterpartyId: string; // Advertiser or Merchant ID
@@ -61,7 +68,8 @@ export interface BidReservation {
   pricingModel: "Fixed" | "Rev-Share" | "Hybrid";
   amountTerms: string; // JSON string for specific terms
   flightWindow: string; // text/date range
-  status: "Pending" | "Accepted" | "Declined" | "Committed" | "Cancelled";
+  status: "Pending" | "Accepted" | "AwaitingFinalApproval" | "Declined" | "Committed" | "Cancelled";
+  comments: Comment[];
   createdDate: string;
   lastModifiedDate: string;
 }

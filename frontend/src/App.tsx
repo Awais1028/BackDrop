@@ -14,6 +14,7 @@ import ScriptDetailPage from "./pages/creator/ScriptDetailPage";
 import FinancingDashboardPage from "./pages/creator/FinancingDashboardPage";
 import DiscoverOpportunitiesPage from "./pages/buyer/DiscoverOpportunitiesPage";
 import MyBidsReservationsPage from "./pages/buyer/MyBidsReservationsPage";
+import DealApprovalPage from "./pages/buyer/DealApprovalPage";
 import MyProductsPage from "./pages/merchant/MyProductsPage";
 import InventoryPage from "./pages/operator/InventoryPage";
 import WorkflowMonitoringPage from "./pages/operator/WorkflowMonitoringPage";
@@ -45,6 +46,7 @@ const App = () => (
                 {/* Buyer (Advertiser & Merchant) Routes */}
                 <Route path="/discover" element={<DiscoverOpportunitiesPage />} />
                 <Route path="/buyer/bids" element={<MyBidsReservationsPage />} />
+                <Route path="/buyer/deals/:bidId" element={<DealApprovalPage />} />
 
                 {/* Merchant-Only Routes */}
                 <Route path="/merchant/products" element={<MyProductsPage />} />

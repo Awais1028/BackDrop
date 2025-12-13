@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment } from '@/types';
+import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment, Comment } from '@/types';
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.7'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '1.8'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -41,94 +41,42 @@ export const generateAndStoreDummyData = () => {
   const users: User[] = [creatorUser, advertiserUser, merchantUser, operatorUser];
   localStorage.setItem('users', JSON.stringify(users));
 
-  // --- Project Scripts (for Creator) ---
+  // --- Project Scripts & Slots (condensed) ---
   const script1: ProjectScript = { id: uuidv4(), title: 'The Last Coffee Shop', creatorId: creatorUser.id, docLink: 'https://example.com/script1.pdf', productionWindow: 'Q1 2025', budgetTarget: 150000, genre: 'Comedy', demographics: '18-34 All', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, genre: 'Thriller', demographics: '25-49 Female', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const script3: ProjectScript = { id: uuidv4(), title: 'Untitled Sci-Fi Project', creatorId: creatorUser.id, docLink: 'https://example.com/script3.pdf', productionWindow: 'Q4 2025', budgetTarget: 500000, genre: 'Sci-Fi', demographics: '18-34 Male', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const projectScripts: ProjectScript[] = [script1, script2, script3];
+  localStorage.setItem('projectScripts', JSON.stringify([script1, script2]));
 
-  // --- Bulk Scripts for Pagination Demo ---
-  const bulkScripts: ProjectScript[] = [];
-  const genres: ProjectScript['genre'][] = ['Comedy', 'Sci-Fi', 'Drama', 'Thriller', 'Action'];
-  for (let i = 1; i <= 100; i++) {
-    bulkScripts.push({
-      id: uuidv4(),
-      title: `Bulk Script Project #${i}`,
-      creatorId: creatorUser.id,
-      docLink: `https://example.com/bulk-script-${i}.pdf`,
-      productionWindow: `Q${(i % 4) + 1} 2026`,
-      budgetTarget: 50000 + (i * 1000),
-      genre: genres[i % genres.length],
-      demographics: 'All Audiences',
-      createdDate: new Date(new Date().getTime() - (i * 1000 * 60 * 60 * 24)).toISOString(), // Stagger creation dates
-      lastModifiedDate: new Date().toISOString(),
-    });
-  }
-  projectScripts.push(...bulkScripts);
-  localStorage.setItem('projectScripts', JSON.stringify(projectScripts));
-
-
-  // --- Integration Slots ---
   const slot1: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Opening Scene: Cafe', description: 'Character orders artisanal coffee.', constraints: 'Premium brands only', pricingFloor: 5000, modality: 'Private Auction', status: 'Available', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const slot2: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Climax: Rooftop Chase', description: 'Protagonist uses a high-tech gadget.', constraints: 'Tech brands, no firearms', pricingFloor: 12000, modality: 'PG/Reservation', status: 'Locked', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   const slot3: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Lab Scene: Product Placement', description: 'Scientist uses lab equipment.', constraints: 'Ethical brands', pricingFloor: 8000, modality: 'Private Auction', status: 'Available', visibility: 'Private', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const slot4: IntegrationSlot = { id: uuidv4(), projectId: script2.id, sceneRef: 'Detective Office', description: 'Character drinks a specific energy drink.', constraints: 'No alcohol', pricingFloor: 7500, modality: 'PG/Reservation', status: 'Completed', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const integrationSlots: IntegrationSlot[] = [slot1, slot2, slot3, slot4];
-
-  // --- Bulk Slots for Pagination Demo ---
-  const bulkSlots: IntegrationSlot[] = [];
-  projectScripts.forEach(script => {
-    if (script.title.startsWith('Bulk Script')) {
-      const numSlots = Math.floor(Math.random() * 4) + 1; // 1 to 4 slots per script
-      for (let i = 1; i <= numSlots; i++) {
-        bulkSlots.push({
-          id: uuidv4(),
-          projectId: script.id,
-          sceneRef: `Scene ${i} in ${script.title}`,
-          description: `A generic integration opportunity for slot ${i}.`,
-          constraints: 'No specific constraints',
-          pricingFloor: 2000 + (i * 500),
-          modality: i % 2 === 0 ? 'Private Auction' : 'PG/Reservation',
-          status: 'Available',
-          visibility: 'Public',
-          createdDate: script.createdDate,
-          lastModifiedDate: new Date().toISOString(),
-        });
-      }
-    }
-  });
-  integrationSlots.push(...bulkSlots);
-  localStorage.setItem('integrationSlots', JSON.stringify(integrationSlots));
-
+  localStorage.setItem('integrationSlots', JSON.stringify([slot1, slot2, slot3]));
 
   // --- SKUs (for Merchant) ---
   const skus: SKU[] = [
     { id: uuidv4(), merchantId: merchantUser.id, title: 'Organic Coffee Blend', price: 15.99, margin: 40, tags: ['coffee', 'organic'], imageUrl: 'https://placehold.co/600x400/5a3a2a/white?text=Coffee', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
     { id: uuidv4(), merchantId: merchantUser.id, title: 'Smartwatch X200', price: 299.99, margin: 25, tags: ['tech', 'wearable'], imageUrl: 'https://placehold.co/600x400/333333/white?text=Smartwatch', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
-    { id: uuidv4(), merchantId: merchantUser.id, title: 'Hydrating Face Serum', price: 45.00, margin: 60, tags: ['skincare', 'beauty'], imageUrl: 'https://placehold.co/600x400/e0c0b8/white?text=Serum', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
-    { id: uuidv4(), merchantId: merchantUser.id, title: 'Noise-Cancelling Headphones', price: 199.50, margin: 30, tags: ['tech', 'audio'], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() },
   ];
   localStorage.setItem('skus', JSON.stringify(skus));
 
-  // --- Bid Reservations ---
-  const bid1 = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot1.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$6000', flightWindow: 'Feb 2025', status: 'Pending', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const bid2 = { id: uuidv4(), counterpartyId: merchantUser.id, slotId: slot1.id, objective: 'Conversions', pricingModel: 'Hybrid', amountTerms: '$4000 + 5% GMV', flightWindow: 'Mar 2025', status: 'Pending', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const bid3 = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot2.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$15000', flightWindow: 'Apr 2025', status: 'Accepted', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const bid4 = { id: uuidv4(), counterpartyId: merchantUser.id, slotId: slot3.id, objective: 'Conversions', pricingModel: 'Rev-Share', amountTerms: '10% GMV', flightWindow: 'Oct 2025', status: 'Declined', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const bid5 = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot4.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$9000', flightWindow: 'Nov 2025', status: 'Committed', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const bidReservations: BidReservation[] = [bid1, bid2, bid3, bid4, bid5];
-  localStorage.setItem('bidReservations', JSON.stringify(bidReservations));
+  // --- Bid Reservations with Comments ---
+  const bid1: BidReservation = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot1.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$6000', flightWindow: 'Feb 2025', status: 'Pending', comments: [], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  
+  const bid2Comments: Comment[] = [
+    { id: uuidv4(), authorId: creatorUser.id, text: "Deal accepted! Let's finalize the integration details here.", timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+    { id: uuidv4(), authorId: advertiserUser.id, text: "Great! Can we ensure the gadget has a prominent close-up shot?", timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
+  ];
+  const bid2: BidReservation = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot2.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$15000', flightWindow: 'Apr 2025', status: 'AwaitingFinalApproval', comments: bid2Comments, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  
+  const bid3: BidReservation = { id: uuidv4(), counterpartyId: merchantUser.id, slotId: slot3.id, objective: 'Conversions', pricingModel: 'Rev-Share', amountTerms: '10% GMV', flightWindow: 'Oct 2025', status: 'Declined', comments: [], createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  
+  localStorage.setItem('bidReservations', JSON.stringify([bid1, bid2, bid3]));
 
-  // --- Financing Commitments (for accepted/committed bids) ---
+  // --- Financing Commitments ---
   const commitments: FinancingCommitment[] = [
-    { id: uuidv4(), slotId: bid3.slotId, bidId: bid3.id, counterpartyId: bid3.counterpartyId, committedAmount: 15000, paidDeposit: false, schedule: 'Upon deal memo signature', createdDate: new Date().toISOString() },
-    { id: uuidv4(), slotId: bid5.slotId, bidId: bid5.id, counterpartyId: bid5.counterpartyId, committedAmount: 9000, paidDeposit: true, schedule: 'Net 30', createdDate: new Date().toISOString() },
+    { id: uuidv4(), slotId: bid2.slotId, bidId: bid2.id, counterpartyId: bid2.counterpartyId, committedAmount: 15000, paidDeposit: false, schedule: 'Upon final approval', createdDate: new Date().toISOString() },
   ];
   localStorage.setItem('financingCommitments', JSON.stringify(commitments));
 
-  // --- Final Toast Notification ---
-  toast.info('Dummy data has been regenerated with passwords. Default password is "password123".');
-  
-  // --- Set Version ---
+  toast.info('Dummy data has been regenerated for the new approval workflow.');
   localStorage.setItem('dummyDataVersion', DUMMY_DATA_VERSION);
 };
