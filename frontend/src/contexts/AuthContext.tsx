@@ -18,17 +18,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
-    // Generate dummy data if no users exist in local storage
-    const storedUsers = localStorage.getItem('users');
-    if (!storedUsers || JSON.parse(storedUsers).length === 0) {
+    console.log('AuthContext useEffect: Checking for users in localStorage...');
+    let usersExist = false;
+    try {
+      const storedUsers = localStorage.getItem('users');
+      if (storedUsers) {
+        const parsedUsers = JSON.parse(storedUsers);
+        if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+          usersExist = true;
+        }
+      }
+    } catch (error) {
+      console.error('AuthContext useEffect: Error parsing users from localStorage, treating as empty:', error);
+      // If parsing fails, treat as if no users exist, so dummy data will be generated
+      usersExist = false;
+      localStorage.removeItem('users'); // Clear potentially malformed data
+    }
+
+    if (!usersExist) {
+      console.log('AuthContext useEffect: No valid users found, generating dummy data.');
       generateAndStoreDummyData();
+    } else {
+      console.log('AuthContext useEffect: Users found in localStorage.');
     }
 
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      const parsedUser: User = JSON.parse(storedUser);
-      setUser(parsedUser);
-      setRole(parsedUser.role);
+      try {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setRole(parsedUser.role);
+        console.log(`AuthContext useEffect: Loaded current user: ${parsedUser.email} (${parsedUser.role})`);
+      } catch (error) {
+        console.error('AuthContext useEffect: Error parsing currentUser from localStorage:', error);
+        localStorage.removeItem('currentUser'); // Clear invalid current user
+      }
+    } else {
+      console.log('AuthContext useEffect: No current user found in localStorage.');
     }
   }, []);
 

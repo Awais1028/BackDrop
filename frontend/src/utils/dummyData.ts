@@ -2,13 +2,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { User, UserRole, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCommitment } from '@/types';
 
 export const generateAndStoreDummyData = () => {
-  // Check if dummy data already exists to prevent overwriting user data
-  if (localStorage.getItem('users') && JSON.parse(localStorage.getItem('users') || '[]').length > 0) {
-    console.log('Dummy data already exists. Skipping generation.');
-    return;
+  console.log('generateAndStoreDummyData: Attempting to generate dummy data.');
+  try {
+    const storedUsers = localStorage.getItem('users');
+    if (storedUsers) {
+      const parsedUsers = JSON.parse(storedUsers);
+      if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+        console.log('generateAndStoreDummyData: Dummy data already exists (checked inside function). Skipping generation.');
+        return;
+      }
+    }
+  } catch (error) {
+    console.warn('generateAndStoreDummyData: Error checking existing users, proceeding with generation:', error);
+    // If parsing fails here, we still want to try generating new data.
   }
-
-  console.log('Generating dummy data...');
 
   // --- Users ---
   const creatorUser: User = { id: uuidv4(), email: 'creator@example.com', name: 'Alice Creator', role: 'Creator' };
@@ -200,6 +207,6 @@ export const generateAndStoreDummyData = () => {
   localStorage.setItem('integrationSlots', JSON.stringify(updatedSlotsForCommitment));
 
 
-  console.log('Dummy data generation complete. You can now log in with:');
+  console.log('generateAndStoreDummyData: Dummy data generation complete. You can now log in with:');
   users.forEach(u => console.log(`- Email: ${u.email}, Role: ${u.role}`));
 };
