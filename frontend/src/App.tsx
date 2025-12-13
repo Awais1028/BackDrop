@@ -10,6 +10,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MyScriptsPage from "./pages/creator/MyScriptsPage";
+import ScriptDetailPage from "./pages/creator/ScriptDetailPage"; // Import new page
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               {/* Protected Creator Routes */}
               <Route element={<ProtectedRoute allowedRoles={["Creator"]} />}>
                 <Route path="/creator/scripts" element={<MyScriptsPage />} />
+                <Route path="/creator/scripts/:scriptId" element={<ScriptDetailPage />} /> {/* New route */}
                 {/* Add other Creator routes here */}
               </Route>
 

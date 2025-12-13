@@ -9,6 +9,7 @@ import { ProjectScript } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { FileText, PlusCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { Link } from 'react-router-dom'; // Import Link
 
 const MyScriptsPage = () => {
   const { user } = useAuth();
@@ -129,26 +130,27 @@ const MyScriptsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {scripts.map((script) => (
-            <Card key={script.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-500" />
-                  {script.title}
-                </CardTitle>
-                <CardDescription>
-                  Production: {script.productionWindow}
-                  {script.budgetTarget && ` | Budget: $${script.budgetTarget.toLocaleString()}`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Uploaded: {new Date(script.createdDate).toLocaleDateString()}
-                </p>
-                <a href={script.docLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm">
-                  View Document
-                </a>
-                {/* Future: Add buttons for View Details, Edit, Delete, Tag Slots */}
-              </CardContent>
+            <Card key={script.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Link to={`/creator/scripts/${script.id}`} className="block">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    {script.title}
+                  </CardTitle>
+                  <CardDescription>
+                    Production: {script.productionWindow}
+                    {script.budgetTarget && ` | Budget: $${script.budgetTarget.toLocaleString()}`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Uploaded: {new Date(script.createdDate).toLocaleDateString()}
+                  </p>
+                  <span className="text-blue-500 hover:underline text-sm">
+                    View Details
+                  </span>
+                </CardContent>
+              </Link>
             </Card>
           ))}
         </div>
