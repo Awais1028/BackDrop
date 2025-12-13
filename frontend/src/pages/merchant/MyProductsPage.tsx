@@ -349,30 +349,45 @@ const MyProductsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {skus.map((sku) => (
-            <Card key={sku.id} className="overflow-hidden">
-              {sku.imageUrl ? (
-                <img src={sku.imageUrl} alt={sku.title} className="w-full h-40 object-cover" />
-              ) : (
-                <div className="w-full h-40 bg-muted flex items-center justify-center">
-                  <Package className="h-12 w-12 text-muted-foreground" />
+            <Card key={sku.id}>
+              <CardContent className="p-4 flex items-start gap-4">
+                <div className="flex-1">
+                  <CardTitle className="mb-1 text-lg">{sku.title}</CardTitle>
+                  <CardDescription>Price: ${sku.price.toFixed(2)} | Margin: {sku.margin}%</CardDescription>
+                  <p className="text-sm text-muted-foreground mt-2 mb-4">
+                    Tags: {sku.tags.join(', ') || 'N/A'}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => showError('Editing SKUs is coming soon!')}>
+                      <Edit className="h-4 w-4 mr-1" /> Edit
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteSku(sku.id, sku.title)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  </div>
                 </div>
-              )}
-              <CardHeader>
-                <CardTitle>{sku.title}</CardTitle>
-                <CardDescription>Price: ${sku.price.toFixed(2)} | Margin: {sku.margin}%</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Tags: {sku.tags.join(', ') || 'N/A'}
-                </p>
-                <div className="flex gap-2 mt-2">
-                  {/* Future: Add Edit SKU functionality */}
-                  <Button variant="outline" size="sm" onClick={() => showError('Editing SKUs is coming soon!')}>
-                    <Edit className="h-4 w-4" /> Edit
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDeleteSku(sku.id, sku.title)}>
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </Button>
+                <div className="w-28 h-28 md:w-32 md:h-32 flex-shrink-0">
+                  {sku.imageUrl ? (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <img
+                          src={sku.imageUrl}
+                          alt={sku.title}
+                          className="w-full h-full object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>{sku.title}</DialogTitle>
+                        </DialogHeader>
+                        <img src={sku.imageUrl} alt={sku.title} className="w-full h-auto rounded-lg" />
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center rounded-md">
+                      <Package className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
