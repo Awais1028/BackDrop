@@ -11,7 +11,7 @@ const FinancingPage = () => {
 
   const [totalCommitted, setTotalCommitted] = useState(0);
   const [totalBudgets, setTotalBudgets] = useState(0);
-  const [marketplaceMargin, setMarketplaceMargin] = useState(0); // Placeholder for now
+  const [marketplaceMargin, setMarketplaceMargin] = useState(0);
 
   useEffect(() => {
     if (!user || role !== 'Operator') {
@@ -27,8 +27,8 @@ const FinancingPage = () => {
     const totalBudgetsAmount = allScripts.reduce((sum, s) => sum + (s.budgetTarget || 0), 0);
     setTotalBudgets(totalBudgetsAmount);
 
-    // Placeholder for margin calculation
-    setMarketplaceMargin(totalCommittedAmount * 0.1); // Assuming a 10% margin for now
+    // Dynamic margin calculation (assuming a 10% platform fee for the prototype)
+    setMarketplaceMargin(totalCommittedAmount * 0.1);
 
   }, [user, role, navigate]);
 
