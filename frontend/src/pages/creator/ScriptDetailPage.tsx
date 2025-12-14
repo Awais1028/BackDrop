@@ -54,6 +54,8 @@ const ScriptDetailPage = () => {
   const [editScriptAgeEnd, setEditScriptAgeEnd] = useState<number | ''>('');
   const [editScriptGender, setEditScriptGender] = useState<ProjectScript['demographicsGender'] | ''>('');
 
+  const ageOptions = Array.from({ length: 101 }, (_, i) => i);
+
   useEffect(() => {
     if (!user || !scriptId) {
       navigate('/login');
@@ -73,8 +75,8 @@ const ScriptDetailPage = () => {
       setEditScriptTitle(foundScript.title);
       setEditScriptProductionWindow(foundScript.productionWindow);
       setEditScriptBudgetTarget(foundScript.budgetTarget || '');
-      setEditScriptAgeStart(foundScript.demographicsAgeStart || '');
-      setEditScriptAgeEnd(foundScript.demographicsAgeEnd || '');
+      setEditScriptAgeStart(foundScript.demographicsAgeStart ?? '');
+      setEditScriptAgeEnd(foundScript.demographicsAgeEnd ?? '');
       setEditScriptGender(foundScript.demographicsGender || '');
 
       const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
@@ -201,7 +203,7 @@ const ScriptDetailPage = () => {
   };
 
   const formatAudience = (script: ProjectScript) => {
-    const age = script.demographicsAgeStart && script.demographicsAgeEnd ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
+    const age = script.demographicsAgeStart != null && script.demographicsAgeEnd != null ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
     const gender = script.demographicsGender || '';
     if (age && gender) return `${age}, ${gender}`;
     return age || gender || 'N/A';
@@ -228,7 +230,7 @@ const ScriptDetailPage = () => {
             <div className="flex gap-2">
               <Dialog open={isEditScriptDialogOpen} onOpenChange={setIsEditScriptDialogOpen}>
                 <DialogTrigger asChild><Button variant="outline" size="sm"><Edit className="h-4 w-4" /></Button></DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-md">
                   <DialogHeader><DialogTitle>Edit Script Details</DialogTitle></DialogHeader>
                   <form onSubmit={handleEditScriptSubmit} className="grid gap-4 py-4">
                     <div className="grid gap-2"><Label htmlFor="editTitle">Title</Label><Input id="editTitle" value={editScriptTitle} onChange={(e) => setEditScriptTitle(e.target.value)} required /></div>
@@ -236,9 +238,15 @@ const ScriptDetailPage = () => {
                     <div className="grid gap-2"><Label htmlFor="editBudget">Budget Target</Label><Input id="editBudget" type="number" value={editScriptBudgetTarget} onChange={(e) => setEditScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
                     <div className="grid gap-2"><Label>Target Audience</Label>
                       <div className="flex items-center gap-2">
-                        <Input type="number" placeholder="Start Age" value={editScriptAgeStart} onChange={(e) => setEditScriptAgeStart(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <Select value={editScriptAgeStart !== '' ? String(editScriptAgeStart) : undefined} onValueChange={(val) => setEditScriptAgeStart(val ? Number(val) : '')}>
+                          <SelectTrigger><SelectValue placeholder="Start Age" /></SelectTrigger>
+                          <SelectContent>{ageOptions.map(age => <SelectItem key={age} value={String(age)}>{age}</SelectItem>)}</SelectContent>
+                        </Select>
                         <span>-</span>
-                        <Input type="number" placeholder="End Age" value={editScriptAgeEnd} onChange={(e) => setEditScriptAgeEnd(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <Select value={editScriptAgeEnd !== '' ? String(editScriptAgeEnd) : undefined} onValueChange={(val) => setEditScriptAgeEnd(val ? Number(val) : '')}>
+                          <SelectTrigger><SelectValue placeholder="End Age" /></SelectTrigger>
+                          <SelectContent>{ageOptions.map(age => <SelectItem key={age} value={String(age)}>{age}</SelectItem>)}</SelectContent>
+                        </Select>
                         <Select value={editScriptGender} onValueChange={(value: ProjectScript['demographicsGender']) => setEditScriptGender(value)}>
                           <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
                           <SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="Male">Male</SelectItem><SelectItem value="Female">Female</SelectItem></SelectContent>

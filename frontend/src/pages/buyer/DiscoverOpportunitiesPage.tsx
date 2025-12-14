@@ -34,6 +34,8 @@ const DiscoverOpportunitiesPage = () => {
   const [amountTerms, setAmountTerms] = useState('');
   const [flightWindow, setFlightWindow] = useState('');
 
+  const ageOptions = Array.from({ length: 101 }, (_, i) => i);
+
   useEffect(() => {
     if (!user || (role !== 'Advertiser' && role !== 'Merchant')) {
       navigate('/login');
@@ -65,9 +67,9 @@ const DiscoverOpportunitiesPage = () => {
       const matchesGender = genderFilter === 'all' || script.demographicsGender === genderFilter;
 
       const startFilter = ageStartFilter === '' ? 0 : Number(ageStartFilter);
-      const endFilter = ageEndFilter === '' ? 999 : Number(ageEndFilter);
+      const endFilter = ageEndFilter === '' ? 100 : Number(ageEndFilter);
       const scriptStart = script.demographicsAgeStart ?? 0;
-      const scriptEnd = script.demographicsAgeEnd ?? 999;
+      const scriptEnd = script.demographicsAgeEnd ?? 100;
       const matchesAge = Math.max(startFilter, scriptStart) <= Math.min(endFilter, scriptEnd);
 
       return matchesSearch && matchesGenre && matchesGender && matchesAge;
@@ -125,7 +127,7 @@ const DiscoverOpportunitiesPage = () => {
   const genres = ['Comedy', 'Sci-Fi', 'Drama', 'Thriller', 'Action'];
   
   const formatAudience = (script: ProjectScript) => {
-    const age = script.demographicsAgeStart && script.demographicsAgeEnd ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
+    const age = script.demographicsAgeStart != null && script.demographicsAgeEnd != null ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
     const gender = script.demographicsGender || '';
     if (age && gender) return `${age}, ${gender}`;
     return age || gender || 'N/A';
@@ -162,9 +164,15 @@ const DiscoverOpportunitiesPage = () => {
           <div className="lg:col-span-2">
             <Label>Target Audience</Label>
             <div className="flex items-center gap-2">
-              <Input type="number" placeholder="Start Age" value={ageStartFilter} onChange={(e) => setAgeStartFilter(e.target.value === '' ? '' : Number(e.target.value))} />
+              <Select value={ageStartFilter !== '' ? String(ageStartFilter) : undefined} onValueChange={(val) => setAgeStartFilter(val ? Number(val) : '')}>
+                <SelectTrigger><SelectValue placeholder="Start Age" /></SelectTrigger>
+                <SelectContent>{ageOptions.map(age => <SelectItem key={age} value={String(age)}>{age}</SelectItem>)}</SelectContent>
+              </Select>
               <span>-</span>
-              <Input type="number" placeholder="End Age" value={ageEndFilter} onChange={(e) => setAgeEndFilter(e.target.value === '' ? '' : Number(e.target.value))} />
+              <Select value={ageEndFilter !== '' ? String(ageEndFilter) : undefined} onValueChange={(val) => setAgeEndFilter(val ? Number(val) : '')}>
+                <SelectTrigger><SelectValue placeholder="End Age" /></SelectTrigger>
+                <SelectContent>{ageOptions.map(age => <SelectItem key={age} value={String(age)}>{age}</SelectItem>)}</SelectContent>
+              </Select>
               <Select value={genderFilter} onValueChange={(value: any) => setGenderFilter(value)}>
                 <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
                 <SelectContent>

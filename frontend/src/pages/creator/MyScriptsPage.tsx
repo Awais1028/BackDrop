@@ -26,6 +26,8 @@ const MyScriptsPage = () => {
   const [newScriptAgeEnd, setNewScriptAgeEnd] = useState<number | ''>('');
   const [newScriptGender, setNewScriptGender] = useState<ProjectScript['demographicsGender'] | ''>('');
 
+  const ageOptions = Array.from({ length: 101 }, (_, i) => i);
+
   useEffect(() => {
     if (user) {
       const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
@@ -82,7 +84,7 @@ const MyScriptsPage = () => {
   };
 
   const formatAudience = (script: ProjectScript) => {
-    const age = script.demographicsAgeStart && script.demographicsAgeEnd ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
+    const age = script.demographicsAgeStart != null && script.demographicsAgeEnd != null ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
     const gender = script.demographicsGender || '';
     if (age && gender) return `${age}, ${gender}`;
     return age || gender || 'N/A';
@@ -98,7 +100,7 @@ const MyScriptsPage = () => {
               <PlusCircle className="mr-2 h-4 w-4" /> Upload New Script
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Upload New Script</DialogTitle>
               <DialogDescription>Enter the details for your new script.</DialogDescription>
@@ -110,9 +112,15 @@ const MyScriptsPage = () => {
               <div className="grid gap-2"><Label htmlFor="budgetTarget">Budget Target ($)</Label><Input id="budgetTarget" type="number" value={newScriptBudgetTarget} onChange={(e) => setNewScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
               <div className="grid gap-2"><Label>Target Audience (Optional)</Label>
                 <div className="flex items-center gap-2">
-                  <Input type="number" placeholder="Start Age" value={newScriptAgeStart} onChange={(e) => setNewScriptAgeStart(e.target.value === '' ? '' : Number(e.target.value))} />
+                  <Select value={newScriptAgeStart !== '' ? String(newScriptAgeStart) : undefined} onValueChange={(val) => setNewScriptAgeStart(val ? Number(val) : '')}>
+                    <SelectTrigger><SelectValue placeholder="Start Age" /></SelectTrigger>
+                    <SelectContent>{ageOptions.map(age => <SelectItem key={age} value={String(age)}>{age}</SelectItem>)}</SelectContent>
+                  </Select>
                   <span>-</span>
-                  <Input type="number" placeholder="End Age" value={newScriptAgeEnd} onChange={(e) => setNewScriptAgeEnd(e.target.value === '' ? '' : Number(e.target.value))} />
+                  <Select value={newScriptAgeEnd !== '' ? String(newScriptAgeEnd) : undefined} onValueChange={(val) => setNewScriptAgeEnd(val ? Number(val) : '')}>
+                    <SelectTrigger><SelectValue placeholder="End Age" /></SelectTrigger>
+                    <SelectContent>{ageOptions.map(age => <SelectItem key={age} value={String(age)}>{age}</SelectItem>)}</SelectContent>
+                  </Select>
                   <Select value={newScriptGender} onValueChange={(value: ProjectScript['demographicsGender']) => setNewScriptGender(value)}>
                     <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
                     <SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="Male">Male</SelectItem><SelectItem value="Female">Female</SelectItem></SelectContent>
