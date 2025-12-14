@@ -22,7 +22,9 @@ export interface ProjectScript {
   productionWindow: string;
   budgetTarget?: number;
   genre?: 'Comedy' | 'Sci-Fi' | 'Drama' | 'Thriller' | 'Action';
-  demographics?: string;
+  demographicsAgeStart?: number;
+  demographicsAgeEnd?: number;
+  demographicsGender?: 'Male' | 'Female' | 'All';
   createdDate: string;
   lastModifiedDate: string;
 }

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProjectScript, IntegrationSlot, BidReservation, FinancingCommitment, User, Comment } from '@/types';
+import { ProjectScript, IntegrationSlot, BidReservation, User } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { FileText, PlusCircle, Tag, Edit, Trash2, Bot, CheckCircle, XCircle, MessageSquare, ArrowLeft, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
@@ -50,7 +50,9 @@ const ScriptDetailPage = () => {
   const [editScriptTitle, setEditScriptTitle] = useState('');
   const [editScriptProductionWindow, setEditScriptProductionWindow] = useState('');
   const [editScriptBudgetTarget, setEditScriptBudgetTarget] = useState<number | ''>('');
-  const [editScriptDemographics, setEditScriptDemographics] = useState('');
+  const [editScriptAgeStart, setEditScriptAgeStart] = useState<number | ''>('');
+  const [editScriptAgeEnd, setEditScriptAgeEnd] = useState<number | ''>('');
+  const [editScriptGender, setEditScriptGender] = useState<ProjectScript['demographicsGender'] | ''>('');
 
   useEffect(() => {
     if (!user || !scriptId) {
@@ -71,7 +73,9 @@ const ScriptDetailPage = () => {
       setEditScriptTitle(foundScript.title);
       setEditScriptProductionWindow(foundScript.productionWindow);
       setEditScriptBudgetTarget(foundScript.budgetTarget || '');
-      setEditScriptDemographics(foundScript.demographics || '');
+      setEditScriptAgeStart(foundScript.demographicsAgeStart || '');
+      setEditScriptAgeEnd(foundScript.demographicsAgeEnd || '');
+      setEditScriptGender(foundScript.demographicsGender || '');
 
       const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
       const scriptSlots = allSlots.filter(slot => slot.projectId === scriptId);
@@ -159,7 +163,9 @@ const ScriptDetailPage = () => {
       title: editScriptTitle, 
       productionWindow: editScriptProductionWindow, 
       budgetTarget: editScriptBudgetTarget === '' ? undefined : Number(editScriptBudgetTarget),
-      demographics: editScriptDemographics,
+      demographicsAgeStart: editScriptAgeStart === '' ? undefined : Number(editScriptAgeStart),
+      demographicsAgeEnd: editScriptAgeEnd === '' ? undefined : Number(editScriptAgeEnd),
+      demographicsGender: editScriptGender === '' ? undefined : editScriptGender,
       lastModifiedDate: new Date().toISOString() 
     };
     const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
@@ -186,19 +192,19 @@ const ScriptDetailPage = () => {
 
   const getBidStatusStyle = (status: BidReservation['status']) => {
     switch (status) {
-      case 'Pending':
-        return { borderColor: 'border-yellow-500', textColor: 'text-yellow-500' };
-      case 'Accepted':
-      case 'AwaitingFinalApproval':
-        return { borderColor: 'border-green-500', textColor: 'text-green-500' };
-      case 'Committed':
-        return { borderColor: 'border-blue-500', textColor: 'text-blue-500' };
-      case 'Declined':
-      case 'Cancelled':
-        return { borderColor: 'border-red-500', textColor: 'text-red-500' };
-      default:
-        return { borderColor: 'border-gray-500', textColor: 'text-gray-500' };
+      case 'Pending': return { borderColor: 'border-yellow-500', textColor: 'text-yellow-500' };
+      case 'Accepted': case 'AwaitingFinalApproval': return { borderColor: 'border-green-500', textColor: 'text-green-500' };
+      case 'Committed': return { borderColor: 'border-blue-500', textColor: 'text-blue-500' };
+      case 'Declined': case 'Cancelled': return { borderColor: 'border-red-500', textColor: 'text-red-500' };
+      default: return { borderColor: 'border-gray-500', textColor: 'text-gray-500' };
     }
+  };
+
+  const formatAudience = (script: ProjectScript) => {
+    const age = script.demographicsAgeStart && script.demographicsAgeEnd ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
+    const gender = script.demographicsGender || '';
+    if (age && gender) return `${age}, ${gender}`;
+    return age || gender || 'N/A';
   };
 
   if (!script) return <div>Loading...</div>;
@@ -212,14 +218,11 @@ const ScriptDetailPage = () => {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="flex items-center gap-2 text-2xl">
-                <FileText className="h-6 w-6 text-blue-500" />
-                {script.title}
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-2xl"><FileText className="h-6 w-6 text-blue-500" />{script.title}</CardTitle>
               <CardDescription>
                 Production: {script.productionWindow}
                 {script.budgetTarget && ` | Budget: $${script.budgetTarget.toLocaleString()}`}
-                {script.demographics && ` | Audience: ${script.demographics}`}
+                {` | Audience: ${formatAudience(script)}`}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -231,7 +234,17 @@ const ScriptDetailPage = () => {
                     <div className="grid gap-2"><Label htmlFor="editTitle">Title</Label><Input id="editTitle" value={editScriptTitle} onChange={(e) => setEditScriptTitle(e.target.value)} required /></div>
                     <div className="grid gap-2"><Label htmlFor="editProdWindow">Production Window</Label><Input id="editProdWindow" value={editScriptProductionWindow} onChange={(e) => setEditScriptProductionWindow(e.target.value)} required /></div>
                     <div className="grid gap-2"><Label htmlFor="editBudget">Budget Target</Label><Input id="editBudget" type="number" value={editScriptBudgetTarget} onChange={(e) => setEditScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
-                    <div className="grid gap-2"><Label htmlFor="editDemographics">Target Audience</Label><Input id="editDemographics" value={editScriptDemographics} onChange={(e) => setEditScriptDemographics(e.target.value)} /></div>
+                    <div className="grid gap-2"><Label>Target Audience</Label>
+                      <div className="flex items-center gap-2">
+                        <Input type="number" placeholder="Start Age" value={editScriptAgeStart} onChange={(e) => setEditScriptAgeStart(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <span>-</span>
+                        <Input type="number" placeholder="End Age" value={editScriptAgeEnd} onChange={(e) => setEditScriptAgeEnd(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <Select value={editScriptGender} onValueChange={(value: ProjectScript['demographicsGender']) => setEditScriptGender(value)}>
+                          <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
+                          <SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="Male">Male</SelectItem><SelectItem value="Female">Female</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <Button type="submit">Save Changes</Button>
                   </form>
                 </DialogContent>
@@ -279,9 +292,7 @@ const ScriptDetailPage = () => {
           {slots.map((slot) => (
             <Card key={slot.id} className="flex flex-col">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2"><Tag className="h-5 w-5 text-green-500" />{slot.sceneRef}</span>
-                </CardTitle>
+                <CardTitle className="flex items-center justify-between"><span className="flex items-center gap-2"><Tag className="h-5 w-5 text-green-500" />{slot.sceneRef}</span></CardTitle>
                 <CardDescription>{slot.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">

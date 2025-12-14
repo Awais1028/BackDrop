@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '1.9'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '2.0'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -42,8 +42,8 @@ export const generateAndStoreDummyData = () => {
   localStorage.setItem('users', JSON.stringify(users));
 
   // --- Project Scripts & Slots (condensed) ---
-  const script1: ProjectScript = { id: uuidv4(), title: 'The Last Coffee Shop', creatorId: creatorUser.id, docLink: 'https://example.com/script1.pdf', productionWindow: 'Q1 2025', budgetTarget: 150000, genre: 'Comedy', demographics: '18-34 All', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-  const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, genre: 'Thriller', demographics: '25-49 Female', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script1: ProjectScript = { id: uuidv4(), title: 'The Last Coffee Shop', creatorId: creatorUser.id, docLink: 'https://example.com/script1.pdf', productionWindow: 'Q1 2025', budgetTarget: 150000, genre: 'Comedy', demographicsAgeStart: 18, demographicsAgeEnd: 34, demographicsGender: 'All', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const script2: ProjectScript = { id: uuidv4(), title: 'Mystery of the Missing Widget', creatorId: creatorUser.id, docLink: 'https://example.com/script2.pdf', productionWindow: 'Q3 2025', budgetTarget: 200000, genre: 'Thriller', demographicsAgeStart: 25, demographicsAgeEnd: 49, demographicsGender: 'Female', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   localStorage.setItem('projectScripts', JSON.stringify([script1, script2]));
 
   const slot1: IntegrationSlot = { id: uuidv4(), projectId: script1.id, sceneRef: 'Opening Scene: Cafe', description: 'Character orders artisanal coffee.', constraints: 'Premium brands only', pricingFloor: 5000, modality: 'Private Auction', status: 'Available', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
@@ -77,6 +77,6 @@ export const generateAndStoreDummyData = () => {
   ];
   localStorage.setItem('financingCommitments', JSON.stringify(commitments));
 
-  toast.info('Dummy data has been regenerated for two-way deal approval.');
+  toast.info('Dummy data has been regenerated for structured demographics.');
   localStorage.setItem('dummyDataVersion', DUMMY_DATA_VERSION);
 };
