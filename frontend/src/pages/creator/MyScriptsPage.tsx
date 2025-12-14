@@ -9,7 +9,7 @@ import { ProjectScript } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { FileText, PlusCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { Link } from 'react-router-dom'; // Import Link
+import { Link } from 'react-router-dom';
 
 const MyScriptsPage = () => {
   const { user } = useAuth();
@@ -20,6 +20,7 @@ const MyScriptsPage = () => {
   const [newScriptDocLink, setNewScriptDocLink] = useState('');
   const [newScriptProductionWindow, setNewScriptProductionWindow] = useState('');
   const [newScriptBudgetTarget, setNewScriptBudgetTarget] = useState<number | ''>('');
+  const [newScriptDemographics, setNewScriptDemographics] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -49,6 +50,7 @@ const MyScriptsPage = () => {
       docLink: newScriptDocLink,
       productionWindow: newScriptProductionWindow,
       budgetTarget: newScriptBudgetTarget === '' ? undefined : Number(newScriptBudgetTarget),
+      demographics: newScriptDemographics,
       createdDate: new Date().toISOString(),
       lastModifiedDate: new Date().toISOString(),
     };
@@ -64,6 +66,7 @@ const MyScriptsPage = () => {
     setNewScriptDocLink('');
     setNewScriptProductionWindow('');
     setNewScriptBudgetTarget('');
+    setNewScriptDemographics('');
   };
 
   return (
@@ -122,6 +125,15 @@ const MyScriptsPage = () => {
                   placeholder="e.g., 100000"
                 />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="demographics">Target Audience / Demographics (Optional)</Label>
+                <Input
+                  id="demographics"
+                  value={newScriptDemographics}
+                  onChange={(e) => setNewScriptDemographics(e.target.value)}
+                  placeholder="e.g., 18-35 Female, All Ages"
+                />
+              </div>
               <Button type="submit">Add Script</Button>
             </form>
           </DialogContent>
@@ -151,7 +163,7 @@ const MyScriptsPage = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Uploaded: {new Date(script.createdDate).toLocaleDateString()}
+                    Audience: {script.demographics || 'N/A'}
                   </p>
                   <span className="text-blue-500 hover:underline text-sm">
                     View Details

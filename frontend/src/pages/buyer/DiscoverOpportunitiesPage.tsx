@@ -26,6 +26,7 @@ const DiscoverOpportunitiesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedModality, setSelectedModality] = useState('all');
+  const [demographicsFilter, setDemographicsFilter] = useState('');
 
   // Bid/Reservation form state
   const [objective, setObjective] = useState<BidReservation['objective'] | ''>('');
@@ -61,10 +62,13 @@ const DiscoverOpportunitiesPage = () => {
 
       const matchesGenre = selectedGenre === 'all' || script.genre === selectedGenre;
       const matchesModality = selectedModality === 'all' || slot.modality === selectedModality;
+      
+      const demoLower = demographicsFilter.toLowerCase();
+      const matchesDemographics = !demoLower || (script.demographics && script.demographics.toLowerCase().includes(demoLower));
 
-      return matchesSearch && matchesGenre && matchesModality;
+      return matchesSearch && matchesGenre && matchesModality && matchesDemographics;
     });
-  }, [availableSlots, searchTerm, selectedGenre, selectedModality, scriptsMap]);
+  }, [availableSlots, searchTerm, selectedGenre, selectedModality, demographicsFilter, scriptsMap]);
 
   const handlePlaceBid = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +79,15 @@ const DiscoverOpportunitiesPage = () => {
     if (!objective || !pricingModel || !amountTerms || !flightWindow) {
       showError('Please fill in all required bid/reservation fields.');
       return;
+    }
+
+    // Enforce Merchant Minimum Integration Fee
+    if (user.role === 'Merchant' && user.minIntegrationFee && pricingModel === 'Fixed') {
+      const bidAmount = parseFloat(amountTerms.replace(/[^0-9.-]+/g, ""));
+      if (!isNaN(bidAmount) && bidAmount < user.minIntegrationFee) {
+        showError(`Your bid of $${bidAmount.toLocaleString()} is below your minimum integration fee of $${user.minIntegrationFee.toLocaleString()}.`);
+        return;
+      }
     }
 
     const newBid: BidReservation = {
@@ -115,36 +128,51 @@ const DiscoverOpportunitiesPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5" /> Filter & Search</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-2">
+            <Label htmlFor="search-term">Search Term</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                id="search-term"
+                placeholder="Script title, scene, description..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="demographics-filter">Demographics</Label>
             <Input
-              placeholder="Search by script title, scene, or description..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              id="demographics-filter"
+              placeholder="e.g., 18-35 Female"
+              value={demographicsFilter}
+              onChange={(e) => setDemographicsFilter(e.target.value)}
             />
           </div>
           <div className="flex gap-4">
-            <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by Genre" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Genres</SelectItem>
-                {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={selectedModality} onValueChange={setSelectedModality}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by Modality" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Modalities</SelectItem>
-                <SelectItem value="Private Auction">Private Auction</SelectItem>
-                <SelectItem value="PG/Reservation">PG/Reservation</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex-1">
+              <Label>Genre</Label>
+              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                <SelectTrigger><SelectValue placeholder="Genre" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Genres</SelectItem>
+                  {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Label>Modality</Label>
+              <Select value={selectedModality} onValueChange={setSelectedModality}>
+                <SelectTrigger><SelectValue placeholder="Modality" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="Private Auction">Auction</SelectItem>
+                  <SelectItem value="PG/Reservation">Reservation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -167,6 +195,9 @@ const DiscoverOpportunitiesPage = () => {
                 <CardContent>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <strong>Genre:</strong> {script?.genre || 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <strong>Audience:</strong> {script?.demographics || 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <strong>Modality:</strong> {slot.modality}

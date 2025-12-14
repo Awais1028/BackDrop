@@ -50,6 +50,7 @@ const ScriptDetailPage = () => {
   const [editScriptTitle, setEditScriptTitle] = useState('');
   const [editScriptProductionWindow, setEditScriptProductionWindow] = useState('');
   const [editScriptBudgetTarget, setEditScriptBudgetTarget] = useState<number | ''>('');
+  const [editScriptDemographics, setEditScriptDemographics] = useState('');
 
   useEffect(() => {
     if (!user || !scriptId) {
@@ -70,6 +71,7 @@ const ScriptDetailPage = () => {
       setEditScriptTitle(foundScript.title);
       setEditScriptProductionWindow(foundScript.productionWindow);
       setEditScriptBudgetTarget(foundScript.budgetTarget || '');
+      setEditScriptDemographics(foundScript.demographics || '');
 
       const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
       const scriptSlots = allSlots.filter(slot => slot.projectId === scriptId);
@@ -148,7 +150,14 @@ const ScriptDetailPage = () => {
   const handleEditScriptSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!script) return;
-    const updatedScript = { ...script, title: editScriptTitle, productionWindow: editScriptProductionWindow, budgetTarget: editScriptBudgetTarget === '' ? undefined : Number(editScriptBudgetTarget), lastModifiedDate: new Date().toISOString() };
+    const updatedScript = { 
+      ...script, 
+      title: editScriptTitle, 
+      productionWindow: editScriptProductionWindow, 
+      budgetTarget: editScriptBudgetTarget === '' ? undefined : Number(editScriptBudgetTarget),
+      demographics: editScriptDemographics,
+      lastModifiedDate: new Date().toISOString() 
+    };
     const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
     const updatedScripts = allScripts.map(s => s.id === script.id ? updatedScript : s);
     localStorage.setItem('projectScripts', JSON.stringify(updatedScripts));
@@ -193,6 +202,7 @@ const ScriptDetailPage = () => {
               <CardDescription>
                 Production: {script.productionWindow}
                 {script.budgetTarget && ` | Budget: $${script.budgetTarget.toLocaleString()}`}
+                {script.demographics && ` | Audience: ${script.demographics}`}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -204,6 +214,7 @@ const ScriptDetailPage = () => {
                     <div className="grid gap-2"><Label htmlFor="editTitle">Title</Label><Input id="editTitle" value={editScriptTitle} onChange={(e) => setEditScriptTitle(e.target.value)} required /></div>
                     <div className="grid gap-2"><Label htmlFor="editProdWindow">Production Window</Label><Input id="editProdWindow" value={editScriptProductionWindow} onChange={(e) => setEditScriptProductionWindow(e.target.value)} required /></div>
                     <div className="grid gap-2"><Label htmlFor="editBudget">Budget Target</Label><Input id="editBudget" type="number" value={editScriptBudgetTarget} onChange={(e) => setEditScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
+                    <div className="grid gap-2"><Label htmlFor="editDemographics">Target Audience</Label><Input id="editDemographics" value={editScriptDemographics} onChange={(e) => setEditScriptDemographics(e.target.value)} /></div>
                     <Button type="submit">Save Changes</Button>
                   </form>
                 </DialogContent>
