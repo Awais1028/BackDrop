@@ -136,7 +136,11 @@ const ScriptDetailPage = () => {
   };
 
   const handleAcceptBid = (bid: BidReservation) => {
-    // ... (logic remains the same)
+    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
+    const updatedBids = allBids.map(b => b.id === bid.id ? { ...b, status: 'AwaitingFinalApproval' as const, lastModifiedDate: new Date().toISOString() } : b);
+    localStorage.setItem('bidReservations', JSON.stringify(updatedBids));
+    setBids(prev => prev.map(b => b.id === bid.id ? { ...b, status: 'AwaitingFinalApproval' as const } : b));
+    showSuccess('Bid accepted! Awaiting final approval from both parties.');
   };
 
   const handleDeclineBid = (bidId: string) => {
@@ -181,7 +185,20 @@ const ScriptDetailPage = () => {
   };
 
   const getBidStatusStyle = (status: BidReservation['status']) => {
-    // ... (logic remains the same)
+    switch (status) {
+      case 'Pending':
+        return { borderColor: 'border-yellow-500', textColor: 'text-yellow-500' };
+      case 'Accepted':
+      case 'AwaitingFinalApproval':
+        return { borderColor: 'border-green-500', textColor: 'text-green-500' };
+      case 'Committed':
+        return { borderColor: 'border-blue-500', textColor: 'text-blue-500' };
+      case 'Declined':
+      case 'Cancelled':
+        return { borderColor: 'border-red-500', textColor: 'text-red-500' };
+      default:
+        return { borderColor: 'border-gray-500', textColor: 'text-gray-500' };
+    }
   };
 
   if (!script) return <div>Loading...</div>;
