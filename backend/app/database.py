@@ -10,7 +10,7 @@ if not MONGODB_URI:
     raise ValueError("MONGODB_URI is not set in the environment variables")
 
 client = AsyncIOMotorClient(MONGODB_URI)
-db = client.get_default_database()
+db = client.get_database("backdrop_db")
 
 async def get_db():
     return db
