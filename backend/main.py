@@ -2,9 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.database import db
+from app.auth import router as auth_router
 import os
 
 app = FastAPI()
+
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 
 # Mount static files
 os.makedirs("static/uploads", exist_ok=True)
