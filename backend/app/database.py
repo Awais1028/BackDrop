@@ -4,12 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGODB_URL = os.getenv("MONGODB_URL")
+MONGODB_URI = os.getenv("MONGODB_URI")
 
-if not MONGODB_URL:
-    raise ValueError("MONGODB_URL is not set in the environment variables")
+if not MONGODB_URI:
+    raise ValueError("MONGODB_URI is not set in the environment variables")
 
-client = AsyncIOMotorClient(MONGODB_URL)
+client = AsyncIOMotorClient(MONGODB_URI)
 db = client.get_default_database()
 
 async def get_db():
