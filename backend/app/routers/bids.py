@@ -24,11 +24,25 @@ async def read_bids(
     if current_user.role in ["advertiser", "merchant"]:
         return await get_bids_by_counterparty(db, current_user.id)
     
-    # Creators should probably use a different endpoint or filter by their slots,
-    # but for now let's just return empty list or handle via specific slot endpoint
-    
     if current_user.role == "operator":
         return await get_all_bids(db)
+
+    # Creators can see all bids relevant to their slots
+    if current_user.role == "creator":
+        # Get all slots by creator
+        # Then get all bids for those slots
+        # This is inefficient but works for now. Better to have get_bids_by_creator in repo.
+        from ..repository import get_slots_by_project, get_projects_by_creator
+        projects = await get_projects_by_creator(db, current_user.id)
+        all_bids = []
+        for project in projects:
+            # We need slots for this project
+            # This is getting heavy, we need a repository optimization later
+            slots = await get_slots_by_project(db, project.id)
+            for slot in slots:
+                bids = await get_bids_by_slot(db, slot.id)
+                all_bids.extend(bids)
+        return all_bids
         
     return []
 
@@ -69,7 +83,9 @@ async def read_bids_for_slot(
     if current_user.role == "creator" and slot.creator_id == current_user.id:
         return await get_bids_by_slot(db, slot_id)
     
-    # Operators can see everything (future)
+    # Operators can see everything
+    if current_user.role == "operator":
+        return await get_bids_by_slot(db, slot_id)
     
     raise HTTPException(status_code=403, detail="Not authorized to view bids for this slot")
 

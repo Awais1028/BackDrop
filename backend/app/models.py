@@ -81,6 +81,8 @@ class SlotVisibility(str, Enum):
 
 class SlotBase(BaseModel):
     scene_ref: str
+    description: Optional[str] = None
+    constraints: Optional[str] = None
     pricing_floor: float
     modality: SlotModality
     status: SlotStatus = SlotStatus.AVAILABLE
