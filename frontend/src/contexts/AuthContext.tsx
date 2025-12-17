@@ -1,21 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
-import { generateAndStoreDummyData } from '@/utils/dummyData';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { api } from '@/api/client';
 
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
   isLoading: boolean;
-  login: (email: string, password: string, formType: 'user' | 'operator') => void;
+  login: (email: string, password: string, formType: 'user' | 'operator') => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string, password: string, role: UserRole) => void;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   updateCurrentUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const normalizeRole = (role: string): UserRole => {
+  if (!role) return 'Creator'; // Default or fallback
+  // Handle "operator" -> "Operator"
+  return (role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()) as UserRole;
+};
 
 const AuthProviderContent = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -23,97 +28,129 @@ const AuthProviderContent = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    generateAndStoreDummyData();
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try {
-        const parsedUser: User = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setRole(parsedUser.role);
-      } catch (error) {
-        localStorage.removeItem('currentUser');
-      }
+  const normalizeUser = (userData: any): User => {
+    if (userData.role) {
+      userData.role = normalizeRole(userData.role);
     }
-    setIsLoading(false);
+    // Flatten merchant profile if present
+    if (userData.merchant_profile) {
+      userData.minIntegrationFee = userData.merchant_profile.min_integration_fee;
+      userData.eligibilityRules = userData.merchant_profile.eligibility_rules;
+      userData.suitabilityRules = userData.merchant_profile.suitability_rules;
+    }
+    return userData as User;
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const userData = await api.get<any>('/auth/me');
+          const normalizedUser = normalizeUser(userData);
+          setUser(normalizedUser);
+          setRole(normalizedUser.role);
+        } catch (error) {
+          console.error("Failed to restore session:", error);
+          localStorage.removeItem('token');
+          setUser(null);
+          setRole(null);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = (email: string, password: string, formType: 'user' | 'operator') => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const existingUser = users.find(u => u.email === email);
-
-    if (existingUser && existingUser.password === password) {
-      // Role validation based on form type
-      if (formType === 'operator' && existingUser.role !== 'Operator') {
-        toast.error('Access denied. This user is not an Operator.');
-        return;
-      }
-      if (formType === 'user' && existingUser.role === 'Operator') {
-        toast.error('Access denied. Please use the Operator Login form.');
-        return;
-      }
-
-      setUser(existingUser);
-      setRole(existingUser.role);
-      localStorage.setItem('currentUser', JSON.stringify(existingUser));
-      toast.success(`Welcome back, ${existingUser.name}!`);
+  const login = async (email: string, password: string, formType: 'user' | 'operator') => {
+    setIsLoading(true);
+    try {
+      const { access_token } = await api.post<{ access_token: string }>('/auth/login', { email, password });
       
+      localStorage.setItem('token', access_token);
+      
+      // Fetch user details
+      const userData = await api.get<any>('/auth/me');
+      const normalizedUser = normalizeUser(userData);
+
+      // Role validation
+      if (formType === 'operator' && normalizedUser.role !== 'Operator') {
+        toast.error('Access denied. This user is not an Operator.');
+        // Ensure state is cleared before returning
+        setUser(null);
+        setRole(null);
+        localStorage.removeItem('token');
+        return;
+      }
+      if (formType === 'user' && normalizedUser.role === 'Operator') {
+        toast.error('Access denied. Please use the Operator Login form.');
+        // Ensure state is cleared before returning
+        setUser(null);
+        setRole(null);
+        localStorage.removeItem('token');
+        return;
+      }
+
+      setUser(normalizedUser);
+      setRole(normalizedUser.role);
+      toast.success(`Welcome back, ${normalizedUser.name}!`);
+
       // Redirect based on role
-      switch (existingUser.role) {
+      switch (normalizedUser.role) {
         case 'Creator': navigate('/creator/scripts'); break;
         case 'Advertiser':
         case 'Merchant': navigate('/discover'); break;
         case 'Operator': navigate('/operator/inventory'); break;
         default: navigate('/'); break;
       }
-    } else {
-      toast.error('Login failed. Please check your email and password.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || 'Login failed. Please check your email and password.');
+    } finally {
+        setIsLoading(false);
     }
   };
 
-  const updateCurrentUser = (updatedUser: User) => {
-    setUser(updatedUser);
-    setRole(updatedUser.role);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+  const updateCurrentUser = async (updatedUser: User) => {
+    try {
+        const updatePayload: any = {};
+        if (updatedUser.name) updatePayload.name = updatedUser.name;
+        if (updatedUser.minIntegrationFee !== undefined) updatePayload.min_integration_fee = updatedUser.minIntegrationFee;
+        if (updatedUser.eligibilityRules !== undefined) updatePayload.eligibility_rules = updatedUser.eligibilityRules;
+        if (updatedUser.suitabilityRules !== undefined) updatePayload.suitability_rules = updatedUser.suitabilityRules;
+
+        const response = await api.put<any>('/auth/me', updatePayload);
+        const normalizedUser = normalizeUser(response);
+        
+        setUser(normalizedUser);
+        setRole(normalizedUser.role);
+    } catch (error) {
+        console.error("Failed to update user profile", error);
+        toast.error("Failed to save settings to server.");
+    }
   };
 
-  const register = (name: string, email: string, password: string, selectedRole: UserRole) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const existingUser = users.find(u => u.email === email);
-
-    if (existingUser) {
-      toast.error('User with this email already exists. Please log in.');
-      return;
-    }
-
-    const newUser: User = {
-      id: uuidv4(),
-      name,
-      email,
-      password,
-      role: selectedRole,
-    };
-
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    setUser(newUser);
-    setRole(newUser.role);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    toast.success(`Account created for ${newUser.name}!`);
-    
-    // Redirect based on role
-    switch (newUser.role) {
-      case 'Creator': navigate('/creator/scripts'); break;
-      case 'Advertiser':
-      case 'Merchant': navigate('/discover'); break;
-      default: navigate('/'); break;
+  const register = async (name: string, email: string, password: string, selectedRole: UserRole) => {
+    setIsLoading(true);
+    try {
+      await api.post('/auth/signup', { name, email, password, role: selectedRole.toLowerCase() });
+      
+      // Auto-login after registration
+      await login(email, password, 'user');
+      
+      toast.success(`Account created for ${name}!`);
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast.error(error.message || 'Registration failed.');
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
     setUser(null);
     setRole(null);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
     toast.info('You have been logged out.');
     navigate('/login');
   };

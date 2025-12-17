@@ -9,9 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectScript, IntegrationSlot, BidReservation, User } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 import { FileText, PlusCircle, Tag, Edit, Trash2, Bot, CheckCircle, XCircle, MessageSquare, ArrowLeft, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { api } from '@/api/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,39 +57,50 @@ const ScriptDetailPage = () => {
   const ageOptions = Array.from({ length: 101 }, (_, i) => i);
 
   useEffect(() => {
-    if (!user || !scriptId) {
-      navigate('/login');
-      return;
-    }
+    const fetchData = async () => {
+      if (!user || !scriptId) return;
 
-    const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const uMap = new Map<string, string>();
-    allUsers.forEach(u => uMap.set(u.id, u.name));
-    setUsersMap(uMap);
+      try {
+        // Fetch Script Details
+        const foundScript = await api.get<ProjectScript>(`/projects/${scriptId}`);
+        setScript(foundScript);
+        
+        // Populate edit form
+        setEditScriptTitle(foundScript.title);
+        setEditScriptProductionWindow(foundScript.production_window || foundScript.productionWindow || '');
+        setEditScriptBudgetTarget(foundScript.budget_target || foundScript.budgetTarget || '');
+        
+        // Handle demographics structure differences
+        const demographics = foundScript.demographics;
+        setEditScriptAgeStart(demographics?.ageStart ?? foundScript.demographicsAgeStart ?? '');
+        setEditScriptAgeEnd(demographics?.ageEnd ?? foundScript.demographicsAgeEnd ?? '');
+        setEditScriptGender(demographics?.gender ?? foundScript.demographicsGender ?? '');
 
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const foundScript = allScripts.find(s => s.id === scriptId);
+        // Fetch Slots
+        const scriptSlots = await api.get<IntegrationSlot[]>(`/slots/?project_id=${scriptId}`);
+        setSlots(scriptSlots);
 
-    if (foundScript && foundScript.creatorId === user.id) {
-      setScript(foundScript);
-      setEditScriptTitle(foundScript.title);
-      setEditScriptProductionWindow(foundScript.productionWindow);
-      setEditScriptBudgetTarget(foundScript.budgetTarget || '');
-      setEditScriptAgeStart(foundScript.demographicsAgeStart ?? '');
-      setEditScriptAgeEnd(foundScript.demographicsAgeEnd ?? '');
-      setEditScriptGender(foundScript.demographicsGender || '');
+        // Fetch Bids for all slots
+        const allBids: BidReservation[] = [];
+        // Note: In production, we should have a single endpoint to get all bids for a project to avoid N+1
+        await Promise.all(scriptSlots.map(async (slot) => {
+            try {
+                const slotBids = await api.get<BidReservation[]>(`/bids/slot/${slot.id}`);
+                allBids.push(...slotBids);
+            } catch (err) {
+                console.warn(`Failed to fetch bids for slot ${slot.id}`, err);
+            }
+        }));
+        setBids(allBids);
 
-      const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-      const scriptSlots = allSlots.filter(slot => slot.projectId === scriptId);
-      setSlots(scriptSlots);
+      } catch (error: any) {
+        console.error("Failed to fetch script details:", error);
+        showError("Script not found or access denied.");
+        navigate('/creator/scripts');
+      }
+    };
 
-      const slotIds = scriptSlots.map(s => s.id);
-      const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-      setBids(allBids.filter(bid => slotIds.includes(bid.slotId)));
-    } else {
-      showError("Script not found or you don't have permission to view it.");
-      navigate('/creator/scripts');
-    }
+    fetchData();
   }, [scriptId, user, navigate]);
 
   const resetSlotForm = () => {
@@ -101,31 +112,39 @@ const ScriptDetailPage = () => {
     setEditingSlot(null);
   };
 
-  const handleSlotSubmit = (e: React.FormEvent) => {
+  const handleSlotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!script || !sceneRef || !description || pricingFloor === '' || !modality) {
       showError('Please fill in all required slot fields.');
       return;
     }
 
-    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
+    try {
+      const payload = {
+        scene_ref: sceneRef,
+        description,
+        constraints,
+        pricing_floor: Number(pricingFloor),
+        modality,
+        status: 'Available',
+        visibility: 'Public'
+      };
 
-    if (editingSlot) {
-      const updatedSlot = { ...editingSlot, sceneRef, description, constraints, pricingFloor: Number(pricingFloor), modality: modality as IntegrationSlot['modality'], lastModifiedDate: new Date().toISOString() };
-      const updatedSlots = allSlots.map(s => s.id === editingSlot.id ? updatedSlot : s);
-      localStorage.setItem('integrationSlots', JSON.stringify(updatedSlots));
-      setSlots(updatedSlots.filter(s => s.projectId === scriptId));
-      showSuccess('Slot updated successfully!');
-    } else {
-      const newSlot: IntegrationSlot = { id: uuidv4(), projectId: script.id, sceneRef, description, constraints, pricingFloor: Number(pricingFloor), modality: modality as IntegrationSlot['modality'], status: 'Available', visibility: 'Public', createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
-      allSlots.push(newSlot);
-      localStorage.setItem('integrationSlots', JSON.stringify(allSlots));
-      setSlots(prev => [...prev, newSlot]);
-      showSuccess('Slot added successfully!');
+      if (editingSlot) {
+        const updatedSlot = await api.put<IntegrationSlot>(`/slots/${editingSlot.id}`, payload);
+        setSlots(prev => prev.map(s => s.id === editingSlot.id ? updatedSlot : s));
+        showSuccess('Slot updated successfully!');
+      } else {
+        const newSlot = await api.post<IntegrationSlot>(`/slots/?project_id=${script.id}`, payload);
+        setSlots(prev => [...prev, newSlot]);
+        showSuccess('Slot added successfully!');
+      }
+
+      setIsSlotDialogOpen(false);
+      resetSlotForm();
+    } catch (error: any) {
+      showError(error.message || 'Failed to save slot');
     }
-
-    setIsSlotDialogOpen(false);
-    resetSlotForm();
   };
 
   const handleAiAssist = () => {
@@ -141,55 +160,62 @@ const ScriptDetailPage = () => {
     }, 2000);
   };
 
-  const handleAcceptBid = (bid: BidReservation) => {
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    const updatedBids = allBids.map(b => b.id === bid.id ? { ...b, status: 'AwaitingFinalApproval' as const, lastModifiedDate: new Date().toISOString() } : b);
-    localStorage.setItem('bidReservations', JSON.stringify(updatedBids));
-    setBids(prev => prev.map(b => b.id === bid.id ? { ...b, status: 'AwaitingFinalApproval' as const } : b));
-    showSuccess('Bid accepted! Awaiting final approval from both parties.');
+  const handleAcceptBid = async (bid: BidReservation) => {
+    try {
+        // Backend endpoint expects POST to accept
+        const updatedBid = await api.post<BidReservation>(`/bids/${bid.id}/accept`, {});
+        setBids(prev => prev.map(b => b.id === bid.id ? updatedBid : b));
+        showSuccess('Bid accepted! Awaiting final approval from both parties.');
+    } catch (error) {
+        showError('Failed to accept bid.');
+    }
   };
 
-  const handleDeclineBid = (bidId: string) => {
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    const updatedBids = allBids.map(b => b.id === bidId ? { ...b, status: 'Declined' as const, lastModifiedDate: new Date().toISOString() } : b);
-    localStorage.setItem('bidReservations', JSON.stringify(updatedBids));
-    setBids(prev => prev.map(b => b.id === bidId ? { ...b, status: 'Declined' as const } : b));
-    showSuccess('Bid declined.');
+  const handleDeclineBid = async (bidId: string) => {
+    try {
+        const updatedBid = await api.post<BidReservation>(`/bids/${bidId}/decline`, {});
+        setBids(prev => prev.map(b => b.id === bidId ? updatedBid : b));
+        showSuccess('Bid declined.');
+    } catch (error) {
+        showError('Failed to decline bid.');
+    }
   };
 
-  const handleEditScriptSubmit = (e: React.FormEvent) => {
+  const handleEditScriptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!script) return;
-    const updatedScript = { 
-      ...script, 
-      title: editScriptTitle, 
-      productionWindow: editScriptProductionWindow, 
-      budgetTarget: editScriptBudgetTarget === '' ? undefined : Number(editScriptBudgetTarget),
-      demographicsAgeStart: editScriptAgeStart === '' ? undefined : Number(editScriptAgeStart),
-      demographicsAgeEnd: editScriptAgeEnd === '' ? undefined : Number(editScriptAgeEnd),
-      demographicsGender: editScriptGender === '' ? undefined : editScriptGender,
-      lastModifiedDate: new Date().toISOString() 
-    };
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const updatedScripts = allScripts.map(s => s.id === script.id ? updatedScript : s);
-    localStorage.setItem('projectScripts', JSON.stringify(updatedScripts));
-    setScript(updatedScript);
-    showSuccess('Script updated successfully!');
-    setIsEditScriptDialogOpen(false);
+
+    try {
+      const payload = {
+        title: editScriptTitle,
+        production_window: editScriptProductionWindow,
+        budget_target: editScriptBudgetTarget === '' ? 0 : Number(editScriptBudgetTarget),
+        demographics: {
+          ageStart: editScriptAgeStart === '' ? 0 : Number(editScriptAgeStart),
+          ageEnd: editScriptAgeEnd === '' ? 100 : Number(editScriptAgeEnd),
+          gender: editScriptGender || 'All'
+        }
+      };
+
+      const updatedScript = await api.put<ProjectScript>(`/projects/${script.id}`, payload);
+      setScript(updatedScript);
+      showSuccess('Script updated successfully!');
+      setIsEditScriptDialogOpen(false);
+    } catch (error: any) {
+      showError(error.message || 'Failed to update script');
+    }
   };
 
-  const handleDeleteScript = () => {
+  const handleDeleteScript = async () => {
     if (!script) return;
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const updatedScripts = allScripts.filter(s => s.id !== script.id);
-    localStorage.setItem('projectScripts', JSON.stringify(updatedScripts));
-
-    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-    const updatedSlots = allSlots.filter(s => s.projectId !== script.id);
-    localStorage.setItem('integrationSlots', JSON.stringify(updatedSlots));
-
-    showSuccess('Script and all associated slots deleted.');
-    navigate('/creator/scripts');
+    
+    try {
+      await api.delete(`/projects/${script.id}`);
+      showSuccess('Script and all associated slots deleted.');
+      navigate('/creator/scripts');
+    } catch (error: any) {
+      showError(error.message || 'Failed to delete script');
+    }
   };
 
   const getBidStatusStyle = (status: BidReservation['status']) => {
@@ -203,8 +229,12 @@ const ScriptDetailPage = () => {
   };
 
   const formatAudience = (script: ProjectScript) => {
-    const age = script.demographicsAgeStart != null && script.demographicsAgeEnd != null ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
-    const gender = script.demographicsGender || '';
+    const demographics = script.demographics;
+    const ageStart = demographics?.ageStart ?? script.demographicsAgeStart;
+    const ageEnd = demographics?.ageEnd ?? script.demographicsAgeEnd;
+    const gender = demographics?.gender ?? script.demographicsGender ?? '';
+    
+    const age = ageStart != null && ageEnd != null ? `${ageStart}-${ageEnd}` : '';
     if (age && gender) return `${age}, ${gender}`;
     return age || gender || 'N/A';
   };
@@ -222,8 +252,8 @@ const ScriptDetailPage = () => {
             <div>
               <CardTitle className="flex items-center gap-2 text-2xl"><FileText className="h-6 w-6 text-blue-500" />{script.title}</CardTitle>
               <CardDescription>
-                Production: {script.productionWindow}
-                {script.budgetTarget && ` | Budget: $${script.budgetTarget.toLocaleString()}`}
+                Production: {script.production_window || script.productionWindow}
+                {(script.budget_target || script.budgetTarget) && ` | Budget: $${(script.budget_target || script.budgetTarget || 0).toLocaleString()}`}
                 {` | Audience: ${formatAudience(script)}`}
               </CardDescription>
             </div>
@@ -235,7 +265,7 @@ const ScriptDetailPage = () => {
                   <form onSubmit={handleEditScriptSubmit} className="grid gap-4 py-4">
                     <div className="grid gap-2"><Label htmlFor="editTitle">Title</Label><Input id="editTitle" value={editScriptTitle} onChange={(e) => setEditScriptTitle(e.target.value)} required /></div>
                     <div className="grid gap-2"><Label htmlFor="editProdWindow">Production Window</Label><Input id="editProdWindow" value={editScriptProductionWindow} onChange={(e) => setEditScriptProductionWindow(e.target.value)} required /></div>
-                    <div className="grid gap-2"><Label htmlFor="editBudget">Budget Target</Label><Input id="editBudget" type="number" value={editScriptBudgetTarget} onChange={(e) => setEditScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
+                    <div className="grid gap-2"><Label htmlFor="editBudget">Budget Target ($)</Label><Input id="editBudget" type="number" value={editScriptBudgetTarget} onChange={(e) => setEditScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
                     <div className="grid gap-2"><Label>Target Audience</Label>
                       <div className="flex items-center gap-2">
                         <Select value={editScriptAgeStart !== '' ? String(editScriptAgeStart) : undefined} onValueChange={(val) => setEditScriptAgeStart(val ? Number(val) : '')}>
@@ -300,13 +330,27 @@ const ScriptDetailPage = () => {
           {slots.map((slot) => (
             <Card key={slot.id} className="flex flex-col">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between"><span className="flex items-center gap-2"><Tag className="h-5 w-5 text-green-500" />{slot.sceneRef}</span></CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Tag className="h-5 w-5 text-green-500" />{slot.scene_ref || slot.sceneRef}</span>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => {
+                       setEditingSlot(slot);
+                       setSceneRef(slot.scene_ref || slot.sceneRef || '');
+                       setDescription(slot.description || '');
+                       setConstraints(slot.constraints || '');
+                       setPricingFloor(slot.pricing_floor || slot.pricingFloor || '');
+                       setModality(slot.modality);
+                       setIsSlotDialogOpen(true);
+                    }}><Edit className="h-4 w-4" /></Button>
+                  </div>
+                </CardTitle>
                 <CardDescription>{slot.description}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm"><strong>Pricing Floor:</strong> ${slot.pricingFloor.toLocaleString()}</p>
+              <CardContent className="flex-grow pt-4">
+                <p className="text-sm"><strong>Pricing Floor:</strong> ${(slot.pricing_floor || slot.pricingFloor || 0).toLocaleString()}</p>
                 <p className="text-sm"><strong>Modality:</strong> {slot.modality}</p>
-                <p className="text-sm"><strong>Status:</strong> {slot.status}</p>
+                <p className="text-sm"><strong>Status:</strong> <span className={slot.status === 'Available' ? 'text-green-600' : 'text-gray-600'}>{slot.status}</span></p>
+                <p className="text-sm"><strong>Visibility:</strong> {slot.visibility}</p>
                 <h3 className="text-md font-semibold mt-4 mb-2">Bids for this Slot:</h3>
                 {bids.filter(bid => bid.slotId === slot.id).length === 0 ? (
                   <p className="text-sm text-gray-500">No bids yet.</p>
@@ -314,8 +358,8 @@ const ScriptDetailPage = () => {
                   <div className="space-y-2">
                     {bids.filter(bid => bid.slotId === slot.id).map(bid => (
                       <div key={bid.id} className={`p-3 rounded-md border-l-4 ${getBidStatusStyle(bid.status).borderColor} bg-background`}>
-                        <p className="font-semibold text-sm">From: {usersMap.get(bid.counterpartyId) || 'Unknown'}</p>
-                        <p className="text-sm">Terms: {bid.amountTerms}</p>
+                        <p className="font-semibold text-sm">From: {usersMap.get(bid.counterpartyId || bid.counterparty_id || '') || 'Unknown Advertiser'}</p>
+                        <p className="text-sm">Terms: {bid.amountTerms || bid.amount_terms}</p>
                         <p className={`text-sm font-bold ${getBidStatusStyle(bid.status).textColor}`}>Status: {bid.status}</p>
                         {bid.status === 'Pending' && (
                           <div className="flex gap-2 mt-2">

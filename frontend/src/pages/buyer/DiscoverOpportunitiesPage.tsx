@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { IntegrationSlot, BidReservation, ProjectScript } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid'; // Removed
 import { Search, Handshake, Filter } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
+import { api } from '@/api/client';
 
 const DiscoverOpportunitiesPage = () => {
   const { user, role } = useAuth();
@@ -36,30 +37,42 @@ const DiscoverOpportunitiesPage = () => {
 
   const ageOptions = Array.from({ length: 101 }, (_, i) => i);
 
+  const fetchData = useCallback(async () => {
+    try {
+        const slots = await api.get<IntegrationSlot[]>('/slots');
+        setAvailableSlots(slots.filter(slot => slot.status === 'Available' && slot.visibility === 'Public'));
+        
+        // Optimize: Fetch only needed scripts or use a backend "expand" feature if available
+        // For MVP, fetching all projects to build the map is okay if volume is low.
+        // Better: Fetch projects for the visible slots.
+        const projects = await api.get<ProjectScript[]>('/projects');
+        const map = new Map<string, ProjectScript>();
+        projects.forEach(script => map.set(script.id, script));
+        setScriptsMap(map);
+    } catch (error) {
+        console.error("Failed to fetch discovery data", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user || (role !== 'Advertiser' && role !== 'Merchant')) {
       navigate('/login');
       return;
     }
-
-    const storedSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-    setAvailableSlots(storedSlots.filter(slot => slot.status === 'Available' && slot.visibility === 'Public'));
-
-    const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const map = new Map<string, ProjectScript>();
-    storedScripts.forEach(script => map.set(script.id, script));
-    setScriptsMap(map);
-  }, [user, role, navigate]);
+    fetchData();
+  }, [user, role, navigate, fetchData]);
 
   const filteredSlots = useMemo(() => {
     return availableSlots.filter(slot => {
-      const script = scriptsMap.get(slot.projectId);
+      const projectId = slot.projectId || slot.project_id;
+      if (!projectId) return false;
+      const script = scriptsMap.get(projectId);
       if (!script) return false;
 
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch =
-        slot.sceneRef.toLowerCase().includes(searchLower) ||
-        slot.description.toLowerCase().includes(searchLower) ||
+        (slot.sceneRef || slot.scene_ref || '').toLowerCase().includes(searchLower) ||
+        (slot.description || '').toLowerCase().includes(searchLower) ||
         script.title.toLowerCase().includes(searchLower);
 
       const matchesGenre = selectedGenre === 'all' || script.genre === selectedGenre;
@@ -76,7 +89,7 @@ const DiscoverOpportunitiesPage = () => {
     });
   }, [availableSlots, searchTerm, selectedGenre, ageStartFilter, ageEndFilter, genderFilter, scriptsMap]);
 
-  const handlePlaceBid = (e: React.FormEvent) => {
+  const handlePlaceBid = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !selectedSlot) {
       showError('User not authenticated or no slot selected.');
@@ -95,33 +108,27 @@ const DiscoverOpportunitiesPage = () => {
       }
     }
 
-    const newBid: BidReservation = {
-      id: uuidv4(),
-      counterpartyId: user.id,
-      slotId: selectedSlot.id,
-      objective: objective as BidReservation['objective'],
-      pricingModel: pricingModel as BidReservation['pricingModel'],
-      amountTerms: amountTerms,
-      flightWindow: flightWindow,
-      status: 'Pending',
-      comments: [],
-      creatorFinalApproval: false,
-      buyerFinalApproval: false,
-      createdDate: new Date().toISOString(),
-      lastModifiedDate: new Date().toISOString(),
-    };
+    try {
+        const payload = {
+            slot_id: selectedSlot.id,
+            objective: objective,
+            pricing_model: pricingModel,
+            amount_terms: amountTerms,
+            flight_window: flightWindow,
+        };
+        
+        await api.post('/bids', payload);
 
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    allBids.push(newBid);
-    localStorage.setItem('bidReservations', JSON.stringify(allBids));
-
-    showSuccess('Bid/Reservation placed successfully!');
-    setIsBidDialogOpen(false);
-    setObjective('');
-    setPricingModel('');
-    setAmountTerms('');
-    setFlightWindow('');
-    setSelectedSlot(null);
+        showSuccess('Bid/Reservation placed successfully!');
+        setIsBidDialogOpen(false);
+        setObjective('');
+        setPricingModel('');
+        setAmountTerms('');
+        setFlightWindow('');
+        setSelectedSlot(null);
+    } catch (error) {
+        showError('Failed to place bid.');
+    }
   };
 
   const genres = ['Comedy', 'Sci-Fi', 'Drama', 'Thriller', 'Action'];
@@ -191,19 +198,24 @@ const DiscoverOpportunitiesPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredSlots.map((slot) => {
-            const script = scriptsMap.get(slot.projectId);
+            const projectId = slot.projectId || slot.project_id;
+            const script = projectId ? scriptsMap.get(projectId) : undefined;
             if (!script) return null;
+
+            const sceneRef = slot.sceneRef || slot.scene_ref;
+            const pricingFloor = slot.pricingFloor || slot.pricing_floor || 0;
+
             return (
               <Card key={slot.id}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Handshake className="h-5 w-5 text-blue-500" />{slot.sceneRef}</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Handshake className="h-5 w-5 text-blue-500" />{sceneRef}</CardTitle>
                   <CardDescription>From script: "{script.title}"</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-1"><strong>Genre:</strong> {script.genre || 'N/A'}</p>
                   <p className="text-sm text-muted-foreground mb-1"><strong>Audience:</strong> {formatAudience(script)}</p>
                   <p className="text-sm text-muted-foreground mb-1"><strong>Modality:</strong> {slot.modality}</p>
-                  <p className="text-sm text-muted-foreground mb-1"><strong>Pricing Floor:</strong> ${slot.pricingFloor.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground mb-1"><strong>Pricing Floor:</strong> ${pricingFloor.toLocaleString()}</p>
                   {slot.constraints && (<p className="text-sm text-muted-foreground mb-2"><strong>Constraints:</strong> {slot.constraints}</p>)}
                   <Dialog open={isBidDialogOpen && selectedSlot?.id === slot.id} onOpenChange={setIsBidDialogOpen}>
                     <DialogTrigger asChild>
@@ -211,7 +223,7 @@ const DiscoverOpportunitiesPage = () => {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Place Bid for "{selectedSlot?.sceneRef}"</DialogTitle>
+                        <DialogTitle>Place Bid for "{selectedSlot?.sceneRef || selectedSlot?.scene_ref}"</DialogTitle>
                         <DialogDescription>Submit your offer for this integration opportunity.</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={handlePlaceBid} className="grid gap-4 py-4">

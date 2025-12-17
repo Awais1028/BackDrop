@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProjectScript, IntegrationSlot, FinancingCommitment } from '@/types';
+import { ProjectScript } from '@/types'; // FinancingCommitment removed as backend aggregates
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, TrendingUp, Percent, FileText } from 'lucide-react'; // Added FileText icon
+import { DollarSign, TrendingUp, Percent, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '@/api/client';
+
+// Extended type for frontend use
+interface DashboardProject extends ProjectScript {
+    committed_amount?: number;
+}
 
 const FinancingDashboardPage = () => {
   const { user } = useAuth();
@@ -13,51 +19,28 @@ const FinancingDashboardPage = () => {
   const [totalBudgetTarget, setTotalBudgetTarget] = useState(0);
   const [totalCommittedAmount, setTotalCommittedAmount] = useState(0);
   const [percentageCovered, setPercentageCovered] = useState(0);
-  const [scripts, setScripts] = useState<ProjectScript[]>([]);
+  const [scripts, setScripts] = useState<DashboardProject[]>([]);
 
   useEffect(() => {
     if (!user || user.role !== 'Creator') {
-      navigate('/login'); // Redirect if not logged in or not a Creator
+      navigate('/login');
       return;
     }
 
-    const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const creatorScripts = storedScripts.filter(script => script.creatorId === user.id);
-    setScripts(creatorScripts);
+    const fetchData = async () => {
+        try {
+            const data = await api.get<any>('/finance/dashboard');
+            
+            setTotalBudgetTarget(data.total_budget_target);
+            setTotalCommittedAmount(data.total_committed_amount);
+            setPercentageCovered(data.percentage_covered);
+            setScripts(data.projects);
+        } catch (error) {
+            console.error("Failed to fetch financing dashboard", error);
+        }
+    };
 
-    let currentTotalBudgetTarget = 0;
-    creatorScripts.forEach(script => {
-      if (script.budgetTarget) {
-        currentTotalBudgetTarget += script.budgetTarget;
-      }
-    });
-    setTotalBudgetTarget(currentTotalBudgetTarget);
-
-
-    const storedSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-    const creatorSlotIds = storedSlots
-      .filter(slot => creatorScripts.some(script => script.id === slot.projectId))
-      .map(slot => slot.id);
-
-
-    const storedCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
-    const creatorCommitments = storedCommitments.filter(commitment =>
-      creatorSlotIds.includes(commitment.slotId)
-    );
-
-
-    let currentTotalCommittedAmount = 0;
-    creatorCommitments.forEach(commitment => {
-      currentTotalCommittedAmount += commitment.committedAmount;
-    });
-    setTotalCommittedAmount(currentTotalCommittedAmount);
-
-
-    if (currentTotalBudgetTarget > 0) {
-      setPercentageCovered((currentTotalCommittedAmount / currentTotalBudgetTarget) * 100);
-    } else {
-      setPercentageCovered(0);
-    }
+    fetchData();
   }, [user, navigate]);
 
   return (
@@ -113,7 +96,7 @@ const FinancingDashboardPage = () => {
           </div>
 
           <h2 className="text-2xl font-semibold mb-4">Your Projects Overview</h2>
-          {scripts.filter(s => s.budgetTarget !== undefined && s.budgetTarget > 0).length === 0 ? (
+          {scripts.filter(s => (s.budgetTarget || s.budget_target || 0) > 0).length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[40vh] bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
               <FileText className="h-16 w-16 text-gray-400 mb-4" />
               <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No scripts with budget targets found.</p>
@@ -122,32 +105,22 @@ const FinancingDashboardPage = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {scripts.map(script => {
-                const scriptSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-                const relevantSlots = scriptSlots.filter(slot => slot.projectId === script.id);
-                const relevantSlotIds = relevantSlots.map(slot => slot.id);
-
-                const storedCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
-                const scriptCommitments = storedCommitments.filter(commitment =>
-                  relevantSlotIds.includes(commitment.slotId)
-                );
-
-                const scriptCommittedAmount = scriptCommitments.reduce((sum, c) => sum + c.committedAmount, 0);
-                const scriptPercentageCovered = script.budgetTarget && script.budgetTarget > 0
-                  ? (scriptCommittedAmount / script.budgetTarget) * 100
-                  : 0;
+                const budgetTarget = script.budgetTarget || script.budget_target || 0;
+                const committedAmount = script.committed_amount || 0;
+                const percentage = budgetTarget > 0 ? (committedAmount / budgetTarget) * 100 : 0;
 
                 return (
                   <Card key={script.id}>
                     <CardHeader>
                       <CardTitle>{script.title}</CardTitle>
-                      <CardDescription>Production Window: {script.productionWindow}</CardDescription>
+                      <CardDescription>Production Window: {script.productionWindow || script.production_window}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="mb-2"><strong>Budget Target:</strong> ${script.budgetTarget?.toLocaleString() || 'N/A'}</p>
-                      <p className="mb-2"><strong>Committed:</strong> ${scriptCommittedAmount.toLocaleString()}</p>
+                      <p className="mb-2"><strong>Budget Target:</strong> ${budgetTarget.toLocaleString()}</p>
+                      <p className="mb-2"><strong>Committed:</strong> ${committedAmount.toLocaleString()}</p>
                       <div className="flex items-center gap-2">
-                        <Progress value={scriptPercentageCovered} className="flex-1" />
-                        <span className="text-sm font-medium">{scriptPercentageCovered.toFixed(2)}% Covered</span>
+                        <Progress value={percentage} className="flex-1" />
+                        <span className="text-sm font-medium">{percentage.toFixed(2)}% Covered</span>
                       </div>
                     </CardContent>
                   </Card>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FinancingCommitment, ProjectScript, User } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Percent } from 'lucide-react';
+import { api } from '@/api/client';
 
 const FinancingPage = () => {
   const { user, role } = useAuth();
@@ -19,17 +19,18 @@ const FinancingPage = () => {
       return;
     }
 
-    const allCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
-    const totalCommittedAmount = allCommitments.reduce((sum, c) => sum + c.committedAmount, 0);
-    setTotalCommitted(totalCommittedAmount);
+    const fetchData = async () => {
+        try {
+            const data = await api.get<any>('/finance/operator/overview');
+            setTotalCommitted(data.total_committed);
+            setTotalBudgets(data.total_budgets);
+            setMarketplaceMargin(data.marketplace_margin);
+        } catch (error) {
+            console.error("Failed to fetch operator financing overview", error);
+        }
+    };
 
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const totalBudgetsAmount = allScripts.reduce((sum, s) => sum + (s.budgetTarget || 0), 0);
-    setTotalBudgets(totalBudgetsAmount);
-
-    // Dynamic margin calculation (assuming a 10% platform fee for the prototype)
-    setMarketplaceMargin(totalCommittedAmount * 0.1);
-
+    fetchData();
   }, [user, role, navigate]);
 
   return (

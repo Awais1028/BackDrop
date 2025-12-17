@@ -7,19 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectScript } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 import { FileText, PlusCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { Link } from 'react-router-dom';
+import { api } from '@/api/client';
 
 const MyScriptsPage = () => {
   const { user } = useAuth();
   const [scripts, setScripts] = useState<ProjectScript[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Form state
   const [newScriptTitle, setNewScriptTitle] = useState('');
-  const [newScriptDocLink, setNewScriptDocLink] = useState('');
+  const [newScriptFile, setNewScriptFile] = useState<File | null>(null);
   const [newScriptProductionWindow, setNewScriptProductionWindow] = useState('');
   const [newScriptBudgetTarget, setNewScriptBudgetTarget] = useState<number | ''>('');
   const [newScriptAgeStart, setNewScriptAgeStart] = useState<number | ''>('');
@@ -29,10 +30,19 @@ const MyScriptsPage = () => {
   const ageOptions = Array.from({ length: 101 }, (_, i) => i);
 
   useEffect(() => {
+    const fetchScripts = async () => {
+      try {
+        const data = await api.get<ProjectScript[]>('/projects/');
+        setScripts(data);
+      } catch (error) {
+        console.error("Failed to fetch scripts", error);
+        // Fallback to local storage or empty if API fails (or for demo if backend not running)
+        // For now, let's assume API works or we show empty.
+      }
+    };
+
     if (user) {
-      const storedScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-      const filteredScripts = storedScripts.filter(script => script.creatorId === user.id);
-      setScripts(filteredScripts);
+      fetchScripts();
     } else {
       setScripts([]);
     }
@@ -40,7 +50,7 @@ const MyScriptsPage = () => {
 
   const resetForm = () => {
     setNewScriptTitle('');
-    setNewScriptDocLink('');
+    setNewScriptFile(null);
     setNewScriptProductionWindow('');
     setNewScriptBudgetTarget('');
     setNewScriptAgeStart('');
@@ -48,44 +58,54 @@ const MyScriptsPage = () => {
     setNewScriptGender('');
   };
 
-  const handleAddScript = (e: React.FormEvent) => {
+  const handleAddScript = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
       showError('You must be logged in to add a script.');
       return;
     }
-    if (!newScriptTitle || !newScriptDocLink || !newScriptProductionWindow) {
-      showError('Please fill in all required fields.');
+    if (!newScriptTitle || !newScriptFile || !newScriptProductionWindow) {
+      showError('Please fill in all required fields and upload a file.');
       return;
     }
 
-    const newScript: ProjectScript = {
-      id: uuidv4(),
+    setIsLoading(true);
+
+    const metadata = {
       title: newScriptTitle,
-      creatorId: user.id,
-      docLink: newScriptDocLink,
-      productionWindow: newScriptProductionWindow,
-      budgetTarget: newScriptBudgetTarget === '' ? undefined : Number(newScriptBudgetTarget),
-      demographicsAgeStart: newScriptAgeStart === '' ? undefined : Number(newScriptAgeStart),
-      demographicsAgeEnd: newScriptAgeEnd === '' ? undefined : Number(newScriptAgeEnd),
-      demographicsGender: newScriptGender === '' ? undefined : newScriptGender,
-      createdDate: new Date().toISOString(),
-      lastModifiedDate: new Date().toISOString(),
+      production_window: newScriptProductionWindow,
+      budget_target: newScriptBudgetTarget === '' ? 0 : Number(newScriptBudgetTarget),
+      demographics: {
+        ageStart: newScriptAgeStart === '' ? 0 : Number(newScriptAgeStart),
+        ageEnd: newScriptAgeEnd === '' ? 100 : Number(newScriptAgeEnd),
+        gender: newScriptGender || 'All'
+      }
     };
 
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    allScripts.push(newScript);
-    localStorage.setItem('projectScripts', JSON.stringify(allScripts));
+    const formData = new FormData();
+    formData.append('file', newScriptFile);
+    formData.append('metadata', JSON.stringify(metadata));
 
-    setScripts(prev => [...prev, newScript]);
-    showSuccess('Script added successfully!');
-    setIsDialogOpen(false);
-    resetForm();
+    try {
+      const newScript = await api.post<ProjectScript>('/projects/', formData);
+      setScripts(prev => [...prev, newScript]);
+      showSuccess('Script added successfully!');
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      showError(error.message || 'Failed to create project');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatAudience = (script: ProjectScript) => {
-    const age = script.demographicsAgeStart != null && script.demographicsAgeEnd != null ? `${script.demographicsAgeStart}-${script.demographicsAgeEnd}` : '';
-    const gender = script.demographicsGender || '';
+    const demographics = script.demographics;
+    const ageStart = demographics?.ageStart ?? script.demographicsAgeStart;
+    const ageEnd = demographics?.ageEnd ?? script.demographicsAgeEnd;
+    const gender = demographics?.gender ?? script.demographicsGender ?? '';
+    
+    const age = ageStart != null && ageEnd != null ? `${ageStart}-${ageEnd}` : '';
     if (age && gender) return `${age}, ${gender}`;
     return age || gender || 'N/A';
   };
@@ -107,7 +127,16 @@ const MyScriptsPage = () => {
             </DialogHeader>
             <form onSubmit={handleAddScript} className="grid gap-4 py-4">
               <div className="grid gap-2"><Label htmlFor="title">Title</Label><Input id="title" value={newScriptTitle} onChange={(e) => setNewScriptTitle(e.target.value)} required /></div>
-              <div className="grid gap-2"><Label htmlFor="docLink">Document Link</Label><Input id="docLink" value={newScriptDocLink} onChange={(e) => setNewScriptDocLink(e.target.value)} required /></div>
+              <div className="grid gap-2">
+                <Label htmlFor="scriptFile">Script File (PDF)</Label>
+                <Input
+                  id="scriptFile"
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setNewScriptFile(e.target.files ? e.target.files[0] : null)}
+                  required
+                />
+              </div>
               <div className="grid gap-2"><Label htmlFor="productionWindow">Production Window</Label><Input id="productionWindow" value={newScriptProductionWindow} onChange={(e) => setNewScriptProductionWindow(e.target.value)} placeholder="e.g., Q4 2024" required /></div>
               <div className="grid gap-2"><Label htmlFor="budgetTarget">Budget Target ($)</Label><Input id="budgetTarget" type="number" value={newScriptBudgetTarget} onChange={(e) => setNewScriptBudgetTarget(e.target.value === '' ? '' : Number(e.target.value))} /></div>
               <div className="grid gap-2"><Label>Target Audience (Optional)</Label>
@@ -127,7 +156,7 @@ const MyScriptsPage = () => {
                   </Select>
                 </div>
               </div>
-              <Button type="submit">Add Script</Button>
+              <Button type="submit" disabled={isLoading}>{isLoading ? 'Uploading...' : 'Add Script'}</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -146,10 +175,15 @@ const MyScriptsPage = () => {
               <Link to={`/creator/scripts/${script.id}`} className="block">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-blue-500" />{script.title}</CardTitle>
-                  <CardDescription>Production: {script.productionWindow}{script.budgetTarget && ` | Budget: $${script.budgetTarget.toLocaleString()}`}</CardDescription>
+                  <CardDescription>
+                    Production: {script.productionWindow || script.production_window}
+                    {(script.budgetTarget || script.budget_target) && ` | Budget: $${(script.budgetTarget || script.budget_target || 0).toLocaleString()}`}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Audience: {formatAudience(script)}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Audience: {formatAudience(script)}
+                  </p>
                   <span className="text-blue-500 hover:underline text-sm">View Details</span>
                 </CardContent>
               </Link>

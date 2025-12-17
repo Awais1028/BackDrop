@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { BidReservation, IntegrationSlot, ProjectScript, User, Comment } from '@/types';
@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Send, CheckCircle, ShieldCheck, UserCheck } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle, ShieldCheck, UserCheck, FileText } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid'; // Removed
+import { api } from '@/api/client';
 
 const DealApprovalPage = () => {
   const { bidId } = useParams<{ bidId: string }>();
@@ -22,102 +23,128 @@ const DealApprovalPage = () => {
   const [newComment, setNewComment] = useState('');
   const [creator, setCreator] = useState<User | null>(null);
 
+  const fetchDealData = useCallback(async () => {
+    if (!user || !bidId) return;
+
+    try {
+        const fetchedBid = await api.get<BidReservation>(`/bids/${bidId}`);
+        setBid(fetchedBid);
+
+        const slotId = fetchedBid.slotId || fetchedBid.slot_id;
+        if (!slotId) throw new Error("Slot ID missing from bid");
+        const fetchedSlot = await api.get<IntegrationSlot>(`/slots/${slotId}`);
+        setSlot(fetchedSlot);
+
+        const projectId = fetchedSlot.projectId || fetchedSlot.project_id;
+        if (!projectId) throw new Error("Project ID missing from slot");
+        const fetchedScript = await api.get<ProjectScript>(`/projects/${projectId}`);
+        setScript(fetchedScript);
+
+        // Fetch users involved
+        const uMap = new Map<string, User>();
+        
+        // Fetch Creator
+        const creatorId = fetchedScript.creatorId || fetchedScript.creator_id;
+        if (creatorId) {
+            try {
+                const fetchedCreator = await api.get<User>(`/auth/users/${creatorId}`);
+                setCreator(fetchedCreator);
+                uMap.set(creatorId, fetchedCreator);
+            } catch (e) { console.error("Failed to fetch creator", e); }
+        }
+
+        // Fetch Buyer/Counterparty
+        const counterpartyId = fetchedBid.counterpartyId || fetchedBid.counterparty_id;
+        if (counterpartyId && counterpartyId !== creatorId) {
+             try {
+                const fetchedBuyer = await api.get<User>(`/auth/users/${counterpartyId}`);
+                uMap.set(counterpartyId, fetchedBuyer);
+            } catch (e) { console.error("Failed to fetch buyer", e); }
+        }
+        
+        // Fetch authors of comments if not already fetched
+        if (fetchedBid.comments) {
+            for (const comment of fetchedBid.comments) {
+                const authorId = comment.authorId || comment.author_id; // Handle backend naming
+                if (authorId && !uMap.has(authorId)) {
+                     try {
+                        const fetchedAuthor = await api.get<User>(`/auth/users/${authorId}`);
+                        uMap.set(authorId, fetchedAuthor);
+                    } catch (e) { console.error("Failed to fetch comment author", e); }
+                }
+            }
+        }
+
+        setUsersMap(uMap);
+
+    } catch (error) {
+        console.error("Failed to fetch deal data", error);
+        showError('Failed to load deal information.');
+        // navigate(-1); // Optional: redirect back on error
+    }
+  }, [user, bidId]);
+
   useEffect(() => {
     if (!user || !bidId) {
       navigate('/login');
       return;
     }
+    fetchDealData();
+  }, [bidId, user, navigate, fetchDealData]);
 
-    const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const uMap = new Map<string, User>();
-    allUsers.forEach(u => uMap.set(u.id, u));
-    setUsersMap(uMap);
-
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    const foundBid = allBids.find(b => b.id === bidId);
-    
-    if (foundBid) {
-        const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-        const foundSlot = allSlots.find(s => s.id === foundBid.slotId);
-        
-        if (foundSlot) {
-            const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-            const foundScript = allScripts.find(s => s.id === foundSlot.projectId);
-            
-            if (foundScript) {
-                // Security check: ensure current user is part of this deal
-                if (user.id === foundScript.creatorId || user.id === foundBid.counterpartyId) {
-                    setBid(foundBid);
-                    setSlot(foundSlot);
-                    setScript(foundScript);
-                    setCreator(uMap.get(foundScript.creatorId) || null);
-                } else {
-                    showError('You do not have permission to view this deal.');
-                    navigate('/');
-                }
-            }
-        }
-    } else {
-      showError('Deal not found.');
-      navigate(-1);
-    }
-  }, [bidId, user, navigate]);
-
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!user || !bid || !newComment.trim()) return;
 
-    const comment: Comment = {
-      id: uuidv4(),
-      authorId: user.id,
-      text: newComment,
-      timestamp: new Date().toISOString(),
-    };
-
-    const updatedBid = { ...bid, comments: [...bid.comments, comment] };
-    
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    const updatedBids = allBids.map(b => b.id === bid.id ? updatedBid : b);
-    localStorage.setItem('bidReservations', JSON.stringify(updatedBids));
-
-    setBid(updatedBid);
-    setNewComment('');
-    showSuccess('Comment added.');
+    try {
+        const updatedBid = await api.post<BidReservation>(`/bids/${bid.id}/comments`, { text: newComment });
+        setBid(updatedBid);
+        setNewComment('');
+        showSuccess('Comment added.');
+    } catch (error) {
+        showError('Failed to add comment.');
+    }
   };
 
-  const handleFinalApproval = () => {
+  const handleDownloadDealMemo = async () => {
+    if (!bidId) return;
+    try {
+        const memo = await api.get<any>(`/bids/${bidId}/deal_memo`);
+        if (memo.download_link) {
+             // For prototype, we might not have a real file, so let's just show success
+             showSuccess(`Deal Memo accessed. Mock link: ${memo.download_link}`);
+             // In real app: window.open(memo.download_link, '_blank');
+        }
+    } catch (error) {
+        showError('Failed to access Deal Memo.');
+    }
+  };
+
+  const handleFinalApproval = async () => {
     if (!user || !bid || !script) return;
 
-    let updatedBid = { ...bid };
-    const isCreator = user.id === script.creatorId;
-
-    if (isCreator && !bid.creatorFinalApproval) {
-      updatedBid.creatorFinalApproval = true;
-      showSuccess('Your final approval has been recorded.');
-    } else if (!isCreator && !bid.buyerFinalApproval) {
-      updatedBid.buyerFinalApproval = true;
-      showSuccess('Your final approval has been recorded.');
-    } else {
-      showError('You have already approved this deal.');
-      return;
+    try {
+        const updatedBid = await api.post<BidReservation>(`/bids/${bid.id}/approve`, {});
+        setBid(updatedBid);
+        
+        if (updatedBid.status === 'Committed') {
+             showSuccess('Deal committed! Both parties have given final approval.');
+        } else {
+             showSuccess('Your final approval has been recorded.');
+        }
+    } catch (error) {
+        showError('Failed to record approval.');
     }
-
-    // Check if both parties have now approved
-    if (updatedBid.creatorFinalApproval && updatedBid.buyerFinalApproval) {
-      updatedBid.status = 'Committed';
-      showSuccess('Deal committed! Both parties have given final approval.');
-    }
-
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    const updatedBids = allBids.map(b => b.id === bid.id ? updatedBid : b);
-    localStorage.setItem('bidReservations', JSON.stringify(updatedBids));
-    setBid(updatedBid);
   };
 
   if (!bid || !slot || !script || !creator) return <div>Loading deal...</div>;
 
-  const buyer = usersMap.get(bid.counterpartyId);
-  const isCurrentUserCreator = user?.id === creator.id;
-  const canCurrentUserApprove = (isCurrentUserCreator && !bid.creatorFinalApproval) || (!isCurrentUserCreator && !bid.buyerFinalApproval);
+  const buyer = usersMap.get(bid.counterpartyId || bid.counterparty_id || '');
+  const creatorId = script.creatorId || script.creator_id;
+  const isCurrentUserCreator = user?.id === creatorId;
+  const creatorApproved = bid.creatorFinalApproval || bid.creator_final_approval;
+  const buyerApproved = bid.buyerFinalApproval || bid.buyer_final_approval;
+  
+  const canCurrentUserApprove = (isCurrentUserCreator && !creatorApproved) || (!isCurrentUserCreator && !buyerApproved);
 
   return (
     <div className="container mx-auto p-4">
@@ -133,16 +160,17 @@ const DealApprovalPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4 h-96 overflow-y-auto p-4 border rounded-md">
-                {bid.comments.map(comment => {
-                  const author = usersMap.get(comment.authorId);
+                {(bid.comments || []).map(comment => {
+                  const authorId = comment.authorId || comment.author_id; // Handle backend naming
+                  const author = usersMap.get(authorId);
                   return (
                     <div key={comment.id} className="flex items-start gap-3">
                       <Avatar>
                         <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${author?.name}`} />
-                        <AvatarFallback>{author?.name.substring(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{author?.name?.substring(0, 2) || '?'}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold">{author?.name} <span className="text-xs text-muted-foreground ml-2">{new Date(comment.timestamp).toLocaleString()}</span></p>
+                        <p className="font-semibold">{author?.name || 'Unknown User'} <span className="text-xs text-muted-foreground ml-2">{new Date(comment.timestamp).toLocaleString()}</span></p>
                         <p className="text-sm">{comment.text}</p>
                       </div>
                     </div>
@@ -172,18 +200,18 @@ const DealApprovalPage = () => {
               <p><strong>Script:</strong> {script.title}</p>
               <p><strong>Creator:</strong> {creator?.name}</p>
               <p><strong>Buyer:</strong> {buyer?.name}</p>
-              <p><strong>Terms:</strong> {bid.amountTerms}</p>
+              <p><strong>Terms:</strong> {bid.amountTerms || bid.amount_terms}</p>
               <p><strong>Status:</strong> <span className="font-semibold">{bid.status}</span></p>
               
-              {bid.status === 'AwaitingFinalApproval' && (
+              {(bid.status === 'AwaitingFinalApproval' || bid.status === 'Committed') && (
                 <div className="mt-4 pt-4 border-t">
                   <h4 className="font-semibold mb-2">Approval Status</h4>
                   <div className="flex items-center gap-2 mb-2">
-                    {bid.creatorFinalApproval ? <UserCheck className="h-5 w-5 text-green-500" /> : <UserCheck className="h-5 w-5 text-muted-foreground" />}
+                    {creatorApproved ? <UserCheck className="h-5 w-5 text-green-500" /> : <UserCheck className="h-5 w-5 text-muted-foreground" />}
                     <span>{creator.name} (Creator)</span>
                   </div>
                   <div className="flex items-center gap-2 mb-4">
-                    {bid.buyerFinalApproval ? <ShieldCheck className="h-5 w-5 text-green-500" /> : <ShieldCheck className="h-5 w-5 text-muted-foreground" />}
+                    {buyerApproved ? <ShieldCheck className="h-5 w-5 text-green-500" /> : <ShieldCheck className="h-5 w-5 text-muted-foreground" />}
                     <span>{buyer?.name} (Buyer)</span>
                   </div>
                   {canCurrentUserApprove && (
@@ -192,6 +220,14 @@ const DealApprovalPage = () => {
                     </Button>
                   )}
                 </div>
+              )}
+              
+              {(bid.status === 'Accepted' || bid.status === 'AwaitingFinalApproval' || bid.status === 'Committed') && (
+                  <div className="mt-4 pt-4 border-t">
+                      <Button variant="outline" className="w-full" onClick={handleDownloadDealMemo}>
+                          <FileText className="mr-2 h-4 w-4" /> Download Deal Memo
+                      </Button>
+                  </div>
               )}
             </CardContent>
           </Card>

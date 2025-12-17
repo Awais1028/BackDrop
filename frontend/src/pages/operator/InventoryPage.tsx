@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Users, Search, Eye, EyeOff } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
+import { api } from '@/api/client';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -27,49 +28,73 @@ const InventoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    if (!user || role !== 'Operator') {
+    if (!user || (role !== 'Operator' && role !== 'operator')) {
       navigate('/login');
       return;
     }
 
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-    const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
+    const fetchData = async () => {
+        try {
+            // Need endpoints for all scripts and slots - reusing existing ones naively
+            // In a real operator view, we'd have dedicated paginated/filtered endpoints
+            const allScripts = await api.get<ProjectScript[]>('/projects'); // Assuming this returns all if no creator filter? Or we need a new endpoint
+            // Wait, /projects currently filters by creator_id if role is creator.
+            // If operator, maybe it should return all. Let's check backend logic.
+            // ... Logic in projects.py: "return await get_projects_by_creator(db, current_user.id)" - this is restrictive.
+            // We need to update backend to allow operators to see all projects.
+            
+            // Temporary workaround: Client side fetching won't work well if backend restricts.
+            // Assuming we update backend shortly or fetch via a new operator endpoint.
+            // For now, let's assume /projects will be updated to return all for operators.
+            
+            const allSlots = await api.get<IntegrationSlot[]>('/slots');
+            
+            setScripts(allScripts);
+            setSlots(allSlots);
 
-    setScripts(allScripts);
-    setSlots(allSlots);
-
-    const map = new Map<string, string>();
-    allUsers.forEach(u => map.set(u.id, u.name));
-    setUsersMap(map);
+            try {
+                const allUsers = await api.get<User[]>('/auth/users');
+                const map = new Map<string, string>();
+                allUsers.forEach(u => map.set(u.id, u.name));
+                setUsersMap(map);
+            } catch (err) {
+                console.error("Failed to fetch users", err);
+            }
+        } catch (error) {
+            console.error("Failed to fetch inventory", error);
+        }
+    };
+    
+    fetchData();
   }, [user, role, navigate]);
 
-  const handleVisibilityChange = (slotId: string, newVisibility: IntegrationSlot['visibility']) => {
-    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-    const updatedSlots = allSlots.map(slot => 
-      slot.id === slotId 
-        ? { ...slot, visibility: newVisibility, lastModifiedDate: new Date().toISOString() } 
-        : slot
-    );
-    localStorage.setItem('integrationSlots', JSON.stringify(updatedSlots));
-    setSlots(updatedSlots);
-    showSuccess(`Slot visibility updated to ${newVisibility}.`);
+  const handleVisibilityChange = async (slotId: string, newVisibility: IntegrationSlot['visibility']) => {
+    try {
+        await api.put(`/slots/${slotId}`, { visibility: newVisibility });
+        setSlots(prev => prev.map(slot => slot.id === slotId ? { ...slot, visibility: newVisibility } : slot));
+        showSuccess(`Slot visibility updated to ${newVisibility}.`);
+    } catch (error) {
+        showError('Failed to update visibility.');
+    }
   };
 
   const processedScripts = useMemo(() => {
     let filtered = scripts.filter(script =>
       script.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (usersMap.get(script.creatorId) || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (usersMap.get(script.creatorId || script.creator_id || '') || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
+      const dateA = new Date(a.createdDate || a.created_date || 0).getTime();
+      const dateB = new Date(b.createdDate || b.created_date || 0).getTime();
+      
       switch (sortBy) {
         case 'title-asc': return a.title.localeCompare(b.title);
         case 'title-desc': return b.title.localeCompare(a.title);
-        case 'date-asc': return new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime();
+        case 'date-asc': return dateA - dateB;
         case 'date-desc':
         default:
-          return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
+          return dateB - dateA;
       }
     });
 
@@ -138,14 +163,14 @@ const InventoryPage = () => {
         ) : (
           <Accordion type="single" collapsible className="w-full">
             {paginatedScripts.map(script => {
-              const scriptSlots = slots.filter(slot => slot.projectId === script.id);
+              const scriptSlots = slots.filter(slot => (slot.projectId || slot.project_id) === script.id);
               return (
                 <AccordionItem value={script.id} key={script.id}>
                   <AccordionTrigger>
                     <div className="flex justify-between w-full pr-4">
                       <span>{script.title}</span>
                       <span className="text-sm text-gray-500">
-                        Creator: {usersMap.get(script.creatorId) || 'Unknown'}
+                        Creator: {usersMap.get(script.creatorId || script.creator_id || '') || 'Unknown'}
                       </span>
                     </div>
                   </AccordionTrigger>

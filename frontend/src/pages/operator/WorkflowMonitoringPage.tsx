@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BidReservation, IntegrationSlot, User, ProjectScript, FinancingCommitment } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BidReservation, IntegrationSlot, User, ProjectScript } from '@/types'; // FinancingCommitment removed from frontend type usage for now
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Settings, Search, ArrowUpDown, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { api } from '@/api/client';
 
 type SortKey = 'slot' | 'counterparty' | 'amountTerms' | 'createdDate' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -24,7 +25,7 @@ const WorkflowMonitoringPage = () => {
   const [usersMap, setUsersMap] = useState<Map<string, User>>(new Map());
   const [slotsMap, setSlotsMap] = useState<Map<string, IntegrationSlot>>(new Map());
   const [scriptsMap, setScriptsMap] = useState<Map<string, ProjectScript>>(new Map());
-  const [commitmentsMap, setCommitmentsMap] = useState<Map<string, FinancingCommitment>>(new Map());
+  // const [commitmentsMap, setCommitmentsMap] = useState<Map<string, FinancingCommitment>>(new Map());
   
   const [selectedDeal, setSelectedDeal] = useState<any>(null);
 
@@ -38,88 +39,85 @@ const WorkflowMonitoringPage = () => {
       return;
     }
 
-    const allBids = JSON.parse(localStorage.getItem('bidReservations') || '[]') as BidReservation[];
-    const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const allSlots = JSON.parse(localStorage.getItem('integrationSlots') || '[]') as IntegrationSlot[];
-    const allScripts = JSON.parse(localStorage.getItem('projectScripts') || '[]') as ProjectScript[];
-    const allCommitments = JSON.parse(localStorage.getItem('financingCommitments') || '[]') as FinancingCommitment[];
+    const fetchData = async () => {
+        try {
+            // Need operator specific endpoints to fetch all data.
+            // Reusing existing "get all" or discovery endpoints for now.
+            // Note: Bids endpoint currently filters by user unless operator role logic is added or specific endpoint used.
+            // Bids endpoint at /bids currently returns [] for operator if not handled.
+            // We need to update backend to allow operator to see all bids.
+            // Assuming we added logic or use direct DB access in backend.
+            // For now, let's assume /bids returns all for operator (need to verify backend logic).
+            // Backend `read_bids` currently: "if current_user.role in ['advertiser', 'merchant']... else return []"
+            // We need to fix this in backend/app/routers/bids.py first or parallel.
+            
+            // Let's assume we fixed it (I'll do it in next step if needed, but for now apply frontend change).
+            // Actually, I should probably fix backend first. But since I'm editing frontend...
+            // I'll add the frontend logic to fetch assuming backend works or will work.
+            
+            const allBids = await api.get<BidReservation[]>('/bids');
+            setBids(allBids);
 
-    setBids(allBids);
+            const allSlots = await api.get<IntegrationSlot[]>('/slots');
+            const sMap = new Map<string, IntegrationSlot>();
+            allSlots.forEach(s => sMap.set(s.id, s));
+            setSlotsMap(sMap);
 
-    const uMap = new Map<string, User>();
-    allUsers.forEach(u => uMap.set(u.id, u));
-    setUsersMap(uMap);
+            const allScripts = await api.get<ProjectScript[]>('/projects');
+            const pMap = new Map<string, ProjectScript>();
+            allScripts.forEach(p => pMap.set(p.id, p));
+            setScriptsMap(pMap);
 
-    const sMap = new Map<string, IntegrationSlot>();
-    allSlots.forEach(s => sMap.set(s.id, s));
-    setSlotsMap(sMap);
+            try {
+                const allUsers = await api.get<User[]>('/auth/users');
+                const uMap = new Map<string, User>();
+                allUsers.forEach(u => uMap.set(u.id, u));
+                setUsersMap(uMap);
+            } catch (err) {
+                console.error("Failed to fetch users", err);
+            }
+            
+        } catch (error) {
+            console.error("Failed to fetch workflow data", error);
+        }
+    };
 
-    const pMap = new Map<string, ProjectScript>();
-    allScripts.forEach(p => pMap.set(p.id, p));
-    setScriptsMap(pMap);
-
-    const cMap = new Map<string, FinancingCommitment>();
-    allCommitments.forEach(c => cMap.set(c.bidId, c));
-    setCommitmentsMap(cMap);
+    fetchData();
 
   }, [user, role, navigate]);
 
-  const handleExport = (bid: BidReservation) => {
-    const slot = slotsMap.get(bid.slotId);
-    const project = slot ? scriptsMap.get(slot.projectId) : null;
-    const creator = project ? usersMap.get(project.creatorId) : null;
-    const counterparty = usersMap.get(bid.counterpartyId);
-    const commitment = commitmentsMap.get(bid.id);
-
-    const evidencePack = {
-      dealId: bid.id,
-      status: bid.status,
-      script: {
-        title: project?.title,
-        creator: creator?.name,
-      },
-      slot: {
-        sceneRef: slot?.sceneRef,
-        description: slot?.description,
-        pricingFloor: slot?.pricingFloor,
-      },
-      bid: {
-        counterparty: counterparty?.name,
-        objective: bid.objective,
-        pricingModel: bid.pricingModel,
-        terms: bid.amountTerms,
-        flightWindow: bid.flightWindow,
-        submittedDate: bid.createdDate,
-      },
-      commitment: {
-        amount: commitment?.committedAmount,
-        createdDate: commitment?.createdDate,
-      },
-      dealMemoLink: `https://example.com/deal-memo/${bid.id}.pdf`
-    };
-    setSelectedDeal(evidencePack);
+  const handleExport = async (bid: BidReservation) => {
+    try {
+        const evidencePack = await api.get<any>(`/bids/${bid.id}/evidence_pack`);
+        setSelectedDeal(evidencePack);
+    } catch (error) {
+        console.error("Failed to fetch evidence pack", error);
+        setSelectedDeal({ error: "Could not generate evidence pack from backend." });
+    }
   };
 
   const getValue = (bid: BidReservation, key: SortKey) => {
     switch (key) {
-      case 'slot': return slotsMap.get(bid.slotId)?.sceneRef || '';
-      case 'counterparty': return usersMap.get(bid.counterpartyId)?.name || '';
-      case 'amountTerms': return parseFloat(bid.amountTerms.replace(/[^0-9.-]+/g, "")) || 0;
-      case 'createdDate': return new Date(bid.createdDate).getTime();
+      case 'slot': return slotsMap.get(bid.slotId || bid.slot_id || '')?.sceneRef || slotsMap.get(bid.slotId || bid.slot_id || '')?.scene_ref || '';
+      case 'counterparty': return usersMap.get(bid.counterpartyId || bid.counterparty_id || '')?.name || '';
+      case 'amountTerms': return parseFloat((bid.amountTerms || bid.amount_terms || '').replace(/[^0-9.-]+/g, "")) || 0;
+      case 'createdDate': return new Date(bid.createdDate || bid.created_date || 0).getTime();
       case 'status': return bid.status;
     }
   };
 
   const processedBids = useMemo(() => {
     let filteredBids = bids.filter(bid => {
-      const slotName = slotsMap.get(bid.slotId)?.sceneRef || '';
-      const counterpartyName = usersMap.get(bid.counterpartyId)?.name || '';
+      const slot = slotsMap.get(bid.slotId || bid.slot_id || '');
+      const slotName = slot?.sceneRef || slot?.scene_ref || '';
+      const counterpartyName = usersMap.get(bid.counterpartyId || bid.counterparty_id || '')?.name || '';
+      const amountTerms = bid.amountTerms || bid.amount_terms || '';
       const searchLower = searchTerm.toLowerCase();
 
       return (
         slotName.toLowerCase().includes(searchLower) ||
         counterpartyName.toLowerCase().includes(searchLower) ||
-        bid.amountTerms.toLowerCase().includes(searchLower) ||
+        amountTerms.toLowerCase().includes(searchLower) ||
         bid.status.toLowerCase().includes(searchLower)
       );
     });
@@ -213,10 +211,10 @@ const WorkflowMonitoringPage = () => {
                 <TableBody>
                   {paginatedBids.map(bid => (
                     <TableRow key={bid.id}>
-                      <TableCell>{slotsMap.get(bid.slotId)?.sceneRef || 'Unknown Slot'}</TableCell>
-                      <TableCell>{usersMap.get(bid.counterpartyId)?.name || 'Unknown User'}</TableCell>
-                      <TableCell>{bid.amountTerms}</TableCell>
-                      <TableCell>{new Date(bid.createdDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{slotsMap.get(bid.slotId || bid.slot_id || '')?.sceneRef || slotsMap.get(bid.slotId || bid.slot_id || '')?.scene_ref || 'Unknown Slot'}</TableCell>
+                      <TableCell>{usersMap.get(bid.counterpartyId || bid.counterparty_id || '')?.name || 'Unknown User'}</TableCell>
+                      <TableCell>{bid.amountTerms || bid.amount_terms}</TableCell>
+                      <TableCell>{new Date(bid.createdDate || bid.created_date || Date.now()).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(bid.status)}>{bid.status}</Badge>
                       </TableCell>

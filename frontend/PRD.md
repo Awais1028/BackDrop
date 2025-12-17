@@ -2,7 +2,7 @@
 title: Product Requirements Document
 app: BackDrop
 created: 2025-12-13T10:00:44.529Z
-version: 1
+version: 1.1
 source: Deep Mode PRD Generation
 ---
 
@@ -24,6 +24,8 @@ source: Deep Mode PRD Generation
     *   Approvals Workflow & Deal Memo Generation (System/Communication)
     *   Financing Dashboard (Financial Record)
     *   Evidence Pack Export (System/Reporting)
+    *   **New:** Operator Account Management (System/Configuration)
+    *   **New:** File Upload Support for Scripts and Images (System/Storage)
 *   **Complexity Assessment:** Moderate
     *   **State Management:** Local (within the application's database).
     *   **External Integrations:** 1 (AI API for script analysis).
@@ -63,7 +65,7 @@ source: Deep Mode PRD Generation
     *   **User Benefit:** Enables creators to bring their content into the marketplace and begin monetizing pre-production.
     *   **Primary User:** Creator
     *   **Lifecycle Operations:**
-        *   **Create:** User uploads a script file (e.g., PDF, DOCX).
+        *   **Create:** User uploads a script file (PDF, DOCX supported via file upload).
         *   **View:** User can view a list of their uploaded scripts and access details for each.
         *   **Edit:** User can update script metadata (e.g., title, production window, budget target).
         *   **Delete:** User can remove an uploaded script.
@@ -298,6 +300,16 @@ source: Deep Mode PRD Generation
     *   **Acceptance Criteria:**
         *   - [ ] Given a campaign, when an Operator requests an evidence pack, then a downloadable bundle containing all specified information is generated.
 
+*   **FR-020: SKU Image Upload (File Support)**
+    *   **Description:** Merchants can upload images for their SKUs directly, rather than providing a URL.
+    *   **Entity Type:** System/Storage
+    *   **User Benefit:** Simplifies the process of adding visuals to products.
+    *   **Primary User:** Merchant
+    *   **Lifecycle Operations:**
+        *   **Create/Edit:** User uploads an image file during SKU creation or editing.
+    *   **Acceptance Criteria:**
+        *   - [ ] Given a Merchant creating/editing a SKU, when they upload an image file, the file is stored and associated with the SKU.
+
 **2.2 Essential Market Features**
 
 *   **FR-XXX: User Authentication**
@@ -306,7 +318,7 @@ source: Deep Mode PRD Generation
     *   **User Benefit:** Protects user data and personalizes experience for each persona.
     *   **Primary User:** All personas
     *   **Lifecycle Operations:**
-        *   **Create:** Register new account (for Creator, Advertiser, Merchant). Operator accounts are provisioned.
+        *   **Create:** Register new account (for Creator, Advertiser, Merchant). Operator accounts are provisioned via database seed/script.
         *   **View:** View profile information.
         *   **Edit:** Update profile and preferences.
         *   **Delete:** Account deletion option (with data export).
@@ -386,7 +398,7 @@ source: Deep Mode PRD Generation
     1.  **Creator** uploads a script (FR-001).
     2.  **Creator** tags "Kitchen Scene #2" as an integration slot, manually or with AI assist (FR-002).
     3.  **Creator** sets a pricing floor and selects "Reservation" modality for the slot (FR-003, FR-004).
-    4.  **Merchant** bulk-uploads their skincare catalog via CSV (FR-012).
+    4.  **Merchant** bulk-uploads their skincare catalog via CSV (FR-012) or adds SKUs manually with images (FR-020).
     5.  **Merchant** sets a minimum integration fee and chooses a hybrid pricing model (min fee + rev-share) (FR-013, FR-014).
     6.  **Merchant** discovers the "Kitchen Scene #2" slot (FR-008).
     7.  **Merchant** reserves the slot, applying eligibility rules from their catalog (FR-009, FR-015).
@@ -461,7 +473,7 @@ source: Deep Mode PRD Generation
     *   **Edit SKU:**
         1.  Merchant locates existing SKU in "My Products" list.
         2.  Merchant clicks "Edit" option.
-        3.  Merchant modifies title, price, margin, or tags.
+        3.  Merchant modifies title, price, margin, tags, or uploads a new image.
         4.  Merchant saves changes.
         5.  System confirms update.
     *   **Delete SKU:**
@@ -509,7 +521,7 @@ source: Deep Mode PRD Generation
 
 *   **Entity Lifecycle Rules:**
     *   **User:** Full CRUD. Account deletion requires confirmation and offers data export.
-    *   **Project/Script:** Full CRUD. Only the Creator who uploaded the script can view, edit, or delete it. Deleting a script cascades to delete all associated Integration Slots.
+    *   **Project/Script:** Full CRUD. Only the Creator who uploaded the script can view, edit, or delete it (Operators can view all). Deleting a script cascades to delete all associated Integration Slots.
     *   **Integration Slot:** Full CRUD. Only the Creator who owns the script can view, edit, or delete its slots. A slot cannot be deleted if it has an active (approved/committed) bid/reservation.
     *   **Advertiser/Merchant:** Full CRUD. Only the associated User can view/edit their profile. Account deletion requires confirmation.
     *   **SKU:** Full CRUD. Only the associated Merchant can view, edit, or delete their SKUs.
@@ -526,7 +538,7 @@ source: Deep Mode PRD Generation
     *   **Project/Script:** `title` (required, unique per creator), `doc_link` (required), `budget_target` (optional, numeric).
     *   **Integration Slot:** `project_id` (required, foreign key), `scene_ref` (required), `description` (required), `constraints` (text/JSON for rules), `pricing_floor` (required, numeric, >=0), `modality` (required, enum: Private Auction, PG/Reservation).
     *   **SKU:** `merchant_id` (required, foreign key), `title` (required), `price` (required, numeric, >0), `margin` (required, numeric, 0-100).
-    *   **Bid/Reservation:** `counterparty_id` (required, foreign key), `slot_id` (required, foreign key), `objective` (required, enum: Reach, Conversions), `pricing_model` (enum: Fixed, Rev-Share, Hybrid), `amount/terms` (required, depends on model), `flight_window` (required, text/date range), `status` (enum: Pending, Accepted, Declined, Committed, Cancelled).
+    *   **Bid/Reservation:** `counterparty_id` (required, foreign key), `slot_id` (required, foreign key), `objective` (enum: Reach, Conversions), `pricing_model` (enum: Fixed, Rev-Share, Hybrid), `amount/terms` (required, depends on model), `flight_window` (required, text/date range), `status` (enum: Pending, Accepted, Declined, Committed, Cancelled).
     *   **Approval:** `slot_id` (required), `counterparty_id` (required), `decision` (enum: Approved, Declined), `timestamp` (required).
     *   **Deal Memo:** `slot_id` (required), `pdf_link` (required).
     *   **Financing Commitment:** `slot_id` (required), `counterparty_id` (required), `committed_amount` (required, numeric, >0).
@@ -546,7 +558,7 @@ source: Deep Mode PRD Generation
     *   **Retention:** User-initiated deletion with data export.
 *   **Project/Script**
     *   **Type:** User-Generated Content
-    *   **Attributes:** `id` (PK), `title` (required), `creator_id` (FK to User), `doc_link` (URL to uploaded script), `production_window` (text/date range), `budget_target` (numeric, optional), `created_date`, `last_modified_date`.
+    *   **Attributes:** `id` (PK), `title` (required), `creator_id` (FK to User), `doc_link` (URL/Path to uploaded script), `production_window` (text/date range), `budget_target` (numeric, optional), `created_date`, `last_modified_date`.
     *   **Relationships:** Belongs to User (Creator), has many Integration Slots.
     *   **Lifecycle:** Full CRUD.
     *   **Retention:** User-initiated deletion.
@@ -570,7 +582,7 @@ source: Deep Mode PRD Generation
     *   **Retention:** User-initiated deletion.
 *   **SKU**
     *   **Type:** User-Generated Content
-    *   **Attributes:** `id` (PK), `merchant_id` (FK to Merchant), `title` (required), `price` (numeric), `margin` (numeric), `tags` (text/array), `created_date`, `last_modified_date`.
+    *   **Attributes:** `id` (PK), `merchant_id` (FK to Merchant), `title` (required), `price` (numeric), `margin` (numeric), `tags` (text/array), `image_url` (optional, path to uploaded file), `created_date`, `last_modified_date`.
     *   **Relationships:** Belongs to Merchant.
     *   **Lifecycle:** Full CRUD.
     *   **Retention:** User-initiated deletion.
@@ -630,7 +642,7 @@ source: Deep Mode PRD Generation
     *   **My Bids/Reservations View:** List of submitted bids/reservations with their status, and options to edit/cancel unaccepted ones.
     *   **My Deals View:** List of accepted/committed deals, with options to provide final approval for integration plans and commit spend.
 *   **Merchant Console:**
-    *   **My Products View:** List of uploaded SKUs, with options for bulk CSV upload, edit, or delete individual SKUs.
+    *   **My Products View:** List of uploaded SKUs, with options for bulk CSV upload, manual add (with image upload), edit, or delete individual SKUs.
     *   **My Rules View:** Interface to define and manage eligibility and suitability rules for SKUs.
     *   **Discover Opportunities View:** (Same as Advertiser Console)
     *   **Slot Detail View:** (Same as Advertiser Console)
@@ -705,6 +717,7 @@ The core workflow from script upload to deal memo generation and financing view 
 *   <del>FR-017: Operator Workflow Monitoring (Auction/Reservation/Approvals)</del>
 *   <del>FR-018: Operator Financing & Margin View</del>
 *   <del>FR-019: Evidence Pack Export</del>
+*   FR-020: SKU Image Upload (File Support)
 *   <del>FR-XXX: User Authentication</del>
 *   <del>FR-XXX: Pricing Engine v0</del>
 *   <del>FR-XXX: Private Auction Logic</del>
@@ -761,7 +774,7 @@ The core workflow from script upload to deal memo generation and financing view 
 **10. ASSUMPTIONS & DECISIONS**
 
 *   **Business Model:** The platform operates as a marketplace, facilitating connections and transactions between creators and buyers, likely taking a commission on successful deals (though real money movement is deferred).
-*   **Access Model:** Individual user accounts for Creators, Advertisers, and Merchants. Operator accounts are internal.
+*   **Access Model:** Individual user accounts for Creators, Advertisers, and Merchants. Operator accounts are internal and seeded.
 *   **Entity Lifecycle Decisions:**
     *   **Project/Script:** Full CRUD. Deletion cascades to associated slots to maintain data integrity.
     *   **Integration Slot:** Full CRUD. Deletion is restricted if active bids/commitments exist to prevent breaking active deals.

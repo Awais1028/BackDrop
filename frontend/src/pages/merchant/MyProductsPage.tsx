@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -7,11 +7,90 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { SKU, User } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid'; // Removed as backend generates IDs
 import { Package, PlusCircle, Upload, Settings, Edit, Trash2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
+import { api } from '@/api/client';
+import { Checkbox } from '@/components/ui/checkbox';
+
+interface SkuFormProps {
+  skuTitle: string;
+  setSkuTitle: (value: string) => void;
+  skuPrice: number | '';
+  setSkuPrice: (value: number | '') => void;
+  skuMargin: number | '';
+  setSkuMargin: (value: number | '') => void;
+  skuTags: string;
+  setSkuTags: (value: string) => void;
+  skuImageUrl: string;
+  setSkuImageUrl: (value: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  buttonText: string;
+}
+
+const SkuForm = ({
+  skuTitle, setSkuTitle,
+  skuPrice, setSkuPrice,
+  skuMargin, setSkuMargin,
+  skuTags, setSkuTags,
+  skuImageUrl, setSkuImageUrl,
+  onSubmit, buttonText
+}: SkuFormProps) => {
+  return (
+      <form onSubmit={onSubmit} className="grid gap-4 py-4">
+          <div className="grid gap-2">
+              <Label htmlFor="title">SKU Title</Label>
+              <Input id="title" value={skuTitle} onChange={(e) => setSkuTitle(e.target.value)} placeholder="e.g., Summer T-Shirt" required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                  <Label htmlFor="price">Price ($)</Label>
+                  <Input id="price" type="number" step="0.01" value={skuPrice} onChange={(e) => setSkuPrice(e.target.value === '' ? '' : Number(e.target.value))} required />
+              </div>
+              <div className="grid gap-2">
+                  <Label htmlFor="margin">Margin (%)</Label>
+                  <Input id="margin" type="number" min="0" max="100" value={skuMargin} onChange={(e) => setSkuMargin(e.target.value === '' ? '' : Number(e.target.value))} required />
+              </div>
+          </div>
+          <div className="grid gap-2">
+              <Label htmlFor="tags">Tags (comma separated)</Label>
+              <Input id="tags" value={skuTags} onChange={(e) => setSkuTags(e.target.value)} placeholder="clothing, summer, casual" />
+          </div>
+          <div className="grid gap-2">
+              <Label htmlFor="imageUrl">Image Upload (Optional)</Label>
+              <Input
+                id="imageUrl"
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    try {
+                      const response = await api.post<{ url: string }>('/skus/upload-image', formData);
+                      setSkuImageUrl(response.url);
+                      showSuccess('Image uploaded successfully');
+                    } catch (error) {
+                      showError('Failed to upload image');
+                    }
+                  }
+                }}
+              />
+              {skuImageUrl && (
+                <div className="mt-2">
+                  <img src={skuImageUrl} alt="Preview" className="h-20 w-20 object-cover rounded-md" />
+                </div>
+              )}
+          </div>
+          <DialogFooter>
+              <Button type="submit">{buttonText}</Button>
+          </DialogFooter>
+      </form>
+  );
+};
 
 const MyProductsPage = () => {
   const { user, role, updateCurrentUser } = useAuth();
@@ -22,6 +101,7 @@ const MyProductsPage = () => {
   const [isEditSkuDialogOpen, setIsEditSkuDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [editingSku, setEditingSku] = useState<SKU | null>(null);
+  const [selectedSkuIds, setSelectedSkuIds] = useState<Set<string>>(new Set());
 
   // Form state
   const [skuTitle, setSkuTitle] = useState('');
@@ -35,17 +115,25 @@ const MyProductsPage = () => {
   const [eligibilityRules, setEligibilityRules] = useState(user?.eligibilityRules ?? '');
   const [suitabilityRules, setSuitabilityRules] = useState(user?.suitabilityRules ?? '');
 
+  const fetchSkus = useCallback(async () => {
+    try {
+      const data = await api.get<SKU[]>('/skus');
+      setSkus(data);
+    } catch (error) {
+      console.error("Failed to fetch SKUs", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user || role !== 'Merchant') {
       navigate('/login');
       return;
     }
-    const storedSkus = JSON.parse(localStorage.getItem('skus') || '[]') as SKU[];
-    setSkus(storedSkus.filter(sku => sku.merchantId === user.id));
+    fetchSkus();
     setMinIntegrationFee(user.minIntegrationFee ?? '');
     setEligibilityRules(user.eligibilityRules ?? '');
     setSuitabilityRules(user.suitabilityRules ?? '');
-  }, [user, role, navigate]);
+  }, [user, role, navigate, fetchSkus]);
 
   const resetForm = () => {
     setSkuTitle('');
@@ -56,52 +144,50 @@ const MyProductsPage = () => {
     setEditingSku(null);
   };
 
-  const handleAddSku = (e: React.FormEvent) => {
+  const handleAddSku = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     if (!skuTitle || skuPrice === '' || skuMargin === '') {
       showError('Please fill in all required SKU fields.');
       return;
     }
-    const newSku: SKU = {
-      id: uuidv4(),
-      merchantId: user.id,
-      title: skuTitle,
-      price: Number(skuPrice),
-      margin: Number(skuMargin),
-      tags: skuTags.split(',').map(tag => tag.trim()).filter(Boolean),
-      imageUrl: skuImageUrl || undefined,
-      createdDate: new Date().toISOString(),
-      lastModifiedDate: new Date().toISOString(),
-    };
-    const allSkus = JSON.parse(localStorage.getItem('skus') || '[]') as SKU[];
-    allSkus.push(newSku);
-    localStorage.setItem('skus', JSON.stringify(allSkus));
-    setSkus(prev => [...prev, newSku]);
-    showSuccess('SKU added successfully!');
-    setIsAddSkuDialogOpen(false);
-    resetForm();
+    try {
+        const payload = {
+            title: skuTitle,
+            price: Number(skuPrice),
+            margin: Number(skuMargin),
+            tags: skuTags.split(',').map(tag => tag.trim()).filter(Boolean),
+            imageUrl: skuImageUrl || undefined,
+        };
+        const createdSku = await api.post<SKU>('/skus', payload);
+        setSkus(prev => [...prev, createdSku]);
+        showSuccess('SKU added successfully!');
+        setIsAddSkuDialogOpen(false);
+        resetForm();
+    } catch (error) {
+        showError('Failed to create SKU.');
+    }
   };
 
-  const handleEditSku = (e: React.FormEvent) => {
+  const handleEditSku = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSku) return;
-    const updatedSku: SKU = {
-      ...editingSku,
-      title: skuTitle,
-      price: Number(skuPrice),
-      margin: Number(skuMargin),
-      tags: skuTags.split(',').map(tag => tag.trim()).filter(Boolean),
-      imageUrl: skuImageUrl || undefined,
-      lastModifiedDate: new Date().toISOString(),
-    };
-    const allSkus = JSON.parse(localStorage.getItem('skus') || '[]') as SKU[];
-    const updatedSkus = allSkus.map(s => s.id === editingSku.id ? updatedSku : s);
-    localStorage.setItem('skus', JSON.stringify(updatedSkus));
-    setSkus(updatedSkus.filter(s => s.merchantId === user?.id));
-    showSuccess('SKU updated successfully!');
-    setIsEditSkuDialogOpen(false);
-    resetForm();
+    try {
+        const payload = {
+            title: skuTitle,
+            price: Number(skuPrice),
+            margin: Number(skuMargin),
+            tags: skuTags.split(',').map(tag => tag.trim()).filter(Boolean),
+            imageUrl: skuImageUrl || undefined,
+        };
+        const updatedSku = await api.put<SKU>(`/skus/${editingSku.id}`, payload);
+        setSkus(prev => prev.map(s => s.id === editingSku.id ? updatedSku : s));
+        showSuccess('SKU updated successfully!');
+        setIsEditSkuDialogOpen(false);
+        resetForm();
+    } catch (error) {
+        showError('Failed to update SKU.');
+    }
   };
 
   const openEditDialog = (sku: SKU) => {
@@ -114,13 +200,63 @@ const MyProductsPage = () => {
     setIsEditSkuDialogOpen(true);
   };
 
-  const handleDeleteSku = (skuId: string, skuTitle: string) => {
+  const handleDeleteSku = async (skuId: string, skuTitle: string) => {
     if (window.confirm(`Are you sure you want to delete the SKU "${skuTitle}"?`)) {
-      const allSkus = JSON.parse(localStorage.getItem('skus') || '[]') as SKU[];
-      const updatedSkus = allSkus.filter(sku => sku.id !== skuId);
-      localStorage.setItem('skus', JSON.stringify(updatedSkus));
-      setSkus(updatedSkus.filter(sku => sku.merchantId === user?.id));
-      showSuccess('SKU deleted successfully.');
+        try {
+            await api.delete(`/skus/${skuId}`);
+            setSkus(prev => prev.filter(sku => sku.id !== skuId));
+            showSuccess('SKU deleted successfully.');
+        } catch (error) {
+            showError('Failed to delete SKU.');
+        }
+    }
+  };
+
+  const toggleSelectSku = (skuId: string) => {
+    setSelectedSkuIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(skuId)) {
+            newSet.delete(skuId);
+        } else {
+            newSet.add(skuId);
+        }
+        return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedSkuIds.size === skus.length) {
+        setSelectedSkuIds(new Set());
+    } else {
+        setSelectedSkuIds(new Set(skus.map(s => s.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedSkuIds.size === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedSkuIds.size} selected SKUs? This action cannot be undone.`)) {
+        try {
+            await Promise.all(Array.from(selectedSkuIds).map(id => api.delete(`/skus/${id}`)));
+            setSkus(prev => prev.filter(sku => !selectedSkuIds.has(sku.id)));
+            setSelectedSkuIds(new Set());
+            showSuccess('Selected SKUs deleted successfully.');
+        } catch (error) {
+            showError('Failed to delete some SKUs.');
+        }
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (skus.length === 0) return;
+    if (window.confirm('Are you sure you want to delete ALL your SKUs? This action cannot be undone.')) {
+        try {
+            await Promise.all(skus.map(sku => api.delete(`/skus/${sku.id}`)));
+            setSkus([]);
+            setSelectedSkuIds(new Set());
+            showSuccess('All SKUs deleted successfully.');
+        } catch (error) {
+            showError('Failed to delete SKUs.');
+        }
     }
   };
 
@@ -131,7 +267,7 @@ const MyProductsPage = () => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: async (results) => {
         const requiredHeaders = ['title', 'price', 'margin'];
         const headers = results.meta.fields;
         if (!headers || !requiredHeaders.every(h => headers.includes(h))) {
@@ -140,23 +276,32 @@ const MyProductsPage = () => {
           return;
         }
 
-        const newSkus: SKU[] = results.data.map((row: any) => ({
-          id: uuidv4(),
-          merchantId: user.id,
-          title: row.title || 'Untitled',
-          price: parseFloat(row.price) || 0,
-          margin: parseInt(row.margin, 10) || 0,
-          tags: (row.tags || '').split(',').map((t:string) => t.trim()).filter(Boolean),
-          imageUrl: row.imageUrl || undefined,
-          createdDate: new Date().toISOString(),
-          lastModifiedDate: new Date().toISOString(),
-        }));
+        let successCount = 0;
+        let failCount = 0;
 
-        const allSkus = JSON.parse(localStorage.getItem('skus') || '[]') as SKU[];
-        const updatedSkus = [...allSkus, ...newSkus];
-        localStorage.setItem('skus', JSON.stringify(updatedSkus));
-        setSkus(prev => [...prev, ...newSkus]);
-        showSuccess(`${newSkus.length} SKUs uploaded successfully!`);
+        // Process sequentially to avoid overwhelming server or handle errors individually
+        for (const row of results.data as any[]) {
+             try {
+                const payload = {
+                    title: row.title || 'Untitled',
+                    price: parseFloat(row.price) || 0,
+                    margin: parseInt(row.margin, 10) || 0,
+                    tags: (row.tags || '').split(',').map((t:string) => t.trim()).filter(Boolean),
+                    imageUrl: row.imageUrl || undefined,
+                };
+                await api.post('/skus', payload);
+                successCount++;
+             } catch (err) {
+                 failCount++;
+                 console.error("Failed to upload SKU", row, err);
+             }
+        }
+        
+        await fetchSkus(); // Refresh list
+        
+        if (successCount > 0) showSuccess(`${successCount} SKUs uploaded successfully!`);
+        if (failCount > 0) showError(`${failCount} SKUs failed to upload.`);
+        
         e.target.value = ''; // Reset file input
       },
       error: (error) => {
@@ -166,7 +311,7 @@ const MyProductsPage = () => {
     });
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -177,18 +322,16 @@ const MyProductsPage = () => {
       suitabilityRules: suitabilityRules,
     };
 
-    const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const updatedUsers = allUsers.map(u => u.id === user.id ? updatedUser : u);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    // Remove localStorage logic
+    // const allUsers = JSON.parse(localStorage.getItem('users') || '[]') as User[];
+    // const updatedUsers = allUsers.map(u => u.id === user.id ? updatedUser : u);
+    // localStorage.setItem('users', JSON.stringify(updatedUsers));
     
-    updateCurrentUser(updatedUser); // Update context
+    await updateCurrentUser(updatedUser); // Update context and backend
     showSuccess('Settings saved successfully!');
     setIsSettingsDialogOpen(false);
   };
 
-  const SkuForm = ({ onSubmit, buttonText }: { onSubmit: (e: React.FormEvent) => void; buttonText: string }) => {
-    // ... (form logic remains the same)
-  };
 
   if (!user || role !== 'Merchant') return null;
 
@@ -215,16 +358,61 @@ const MyProductsPage = () => {
             <DialogTrigger asChild><Button><PlusCircle className="mr-2 h-4 w-4" /> Add New SKU</Button></DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader><DialogTitle>Add New SKU</DialogTitle><DialogDescription>Manually add a single product to your catalog.</DialogDescription></DialogHeader>
-              <SkuForm onSubmit={handleAddSku} buttonText="Add SKU" />
+              <SkuForm
+                skuTitle={skuTitle} setSkuTitle={setSkuTitle}
+                skuPrice={skuPrice} setSkuPrice={setSkuPrice}
+                skuMargin={skuMargin} setSkuMargin={setSkuMargin}
+                skuTags={skuTags} setSkuTags={setSkuTags}
+                skuImageUrl={skuImageUrl} setSkuImageUrl={setSkuImageUrl}
+                onSubmit={handleAddSku}
+                buttonText="Add SKU"
+              />
             </DialogContent>
           </Dialog>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center space-x-2">
+            <Checkbox
+                id="select-all"
+                checked={skus.length > 0 && selectedSkuIds.size === skus.length}
+                onCheckedChange={toggleSelectAll}
+            />
+            <Label htmlFor="select-all" className="cursor-pointer">Select All</Label>
+        </div>
+        <div className="flex space-x-2">
+            <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteSelected}
+                disabled={selectedSkuIds.size === 0}
+            >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedSkuIds.size})
+            </Button>
+            <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteAll}
+                disabled={skus.length === 0}
+            >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete All
+            </Button>
         </div>
       </div>
 
       <Dialog open={isEditSkuDialogOpen} onOpenChange={(isOpen) => { setIsEditSkuDialogOpen(isOpen); if (!isOpen) resetForm(); }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader><DialogTitle>Edit SKU</DialogTitle><DialogDescription>Update the details for this product.</DialogDescription></DialogHeader>
-          <SkuForm onSubmit={handleEditSku} buttonText="Save Changes" />
+          <SkuForm
+            skuTitle={skuTitle} setSkuTitle={setSkuTitle}
+            skuPrice={skuPrice} setSkuPrice={setSkuPrice}
+            skuMargin={skuMargin} setSkuMargin={setSkuMargin}
+            skuTags={skuTags} setSkuTags={setSkuTags}
+            skuImageUrl={skuImageUrl} setSkuImageUrl={setSkuImageUrl}
+            onSubmit={handleEditSku}
+            buttonText="Save Changes"
+          />
         </DialogContent>
       </Dialog>
 
@@ -243,8 +431,14 @@ const MyProductsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {skus.map((sku) => (
-            <Card key={sku.id}>
+            <Card key={sku.id} className={selectedSkuIds.has(sku.id) ? 'border-primary ring-1 ring-primary' : ''}>
               <CardContent className="p-4 flex flex-col sm:flex-row items-start gap-4">
+                <div className="pt-1">
+                    <Checkbox
+                        checked={selectedSkuIds.has(sku.id)}
+                        onCheckedChange={() => toggleSelectSku(sku.id)}
+                    />
+                </div>
                 <div className="flex-1 min-w-0">
                   <CardTitle className="mb-1 text-lg">{sku.title}</CardTitle>
                   <CardDescription>Price: ${sku.price.toFixed(2)} | Margin: {sku.margin}%</CardDescription>
