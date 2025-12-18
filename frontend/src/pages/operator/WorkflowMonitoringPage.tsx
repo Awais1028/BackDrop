@@ -43,35 +43,30 @@ const WorkflowMonitoringPage = () => {
         try {
             // Need operator specific endpoints to fetch all data.
             // Reusing existing "get all" or discovery endpoints for now.
-            // Note: Bids endpoint currently filters by user unless operator role logic is added or specific endpoint used.
-            // Bids endpoint at /bids currently returns [] for operator if not handled.
-            // We need to update backend to allow operator to see all bids.
-            // Assuming we added logic or use direct DB access in backend.
-            // For now, let's assume /bids returns all for operator (need to verify backend logic).
-            // Backend `read_bids` currently: "if current_user.role in ['advertiser', 'merchant']... else return []"
-            // We need to fix this in backend/app/routers/bids.py first or parallel.
-            
-            // Let's assume we fixed it (I'll do it in next step if needed, but for now apply frontend change).
-            // Actually, I should probably fix backend first. But since I'm editing frontend...
-            // I'll add the frontend logic to fetch assuming backend works or will work.
             
             const allBids = await api.get<BidReservation[]>('/bids');
-            setBids(allBids);
+            setBids(allBids || []);
 
             const allSlots = await api.get<IntegrationSlot[]>('/slots');
             const sMap = new Map<string, IntegrationSlot>();
-            allSlots.forEach(s => sMap.set(s.id, s));
+            (allSlots || []).forEach(s => {
+                if (s && s.id) sMap.set(s.id, s);
+            });
             setSlotsMap(sMap);
 
             const allScripts = await api.get<ProjectScript[]>('/projects');
             const pMap = new Map<string, ProjectScript>();
-            allScripts.forEach(p => pMap.set(p.id, p));
+            (allScripts || []).forEach(p => {
+                if (p && p.id) pMap.set(p.id, p);
+            });
             setScriptsMap(pMap);
 
             try {
                 const allUsers = await api.get<User[]>('/auth/users');
                 const uMap = new Map<string, User>();
-                allUsers.forEach(u => uMap.set(u.id, u));
+                (allUsers || []).forEach(u => {
+                    if (u && u.id) uMap.set(u.id, u);
+                });
                 setUsersMap(uMap);
             } catch (err) {
                 console.error("Failed to fetch users", err);
@@ -98,27 +93,35 @@ const WorkflowMonitoringPage = () => {
 
   const getValue = (bid: BidReservation, key: SortKey) => {
     switch (key) {
-      case 'slot': return slotsMap.get(bid.slotId || bid.slot_id || '')?.sceneRef || slotsMap.get(bid.slotId || bid.slot_id || '')?.scene_ref || '';
-      case 'counterparty': return usersMap.get(bid.counterpartyId || bid.counterparty_id || '')?.name || '';
+      case 'slot':
+        const slot = slotsMap.get(bid.slotId || bid.slot_id || '');
+        return slot?.sceneRef || slot?.scene_ref || '';
+      case 'counterparty':
+        const user = usersMap.get(bid.counterpartyId || bid.counterparty_id || '');
+        return user?.name || '';
       case 'amountTerms': return parseFloat((bid.amountTerms || bid.amount_terms || '').replace(/[^0-9.-]+/g, "")) || 0;
       case 'createdDate': return new Date(bid.createdDate || bid.created_date || 0).getTime();
-      case 'status': return bid.status;
+      case 'status': return bid.status || '';
     }
   };
 
   const processedBids = useMemo(() => {
+    if (!bids) return [];
+    
     let filteredBids = bids.filter(bid => {
+      if (!bid) return false;
       const slot = slotsMap.get(bid.slotId || bid.slot_id || '');
       const slotName = slot?.sceneRef || slot?.scene_ref || '';
       const counterpartyName = usersMap.get(bid.counterpartyId || bid.counterparty_id || '')?.name || '';
       const amountTerms = bid.amountTerms || bid.amount_terms || '';
       const searchLower = searchTerm.toLowerCase();
+      const status = bid.status || '';
 
       return (
         slotName.toLowerCase().includes(searchLower) ||
         counterpartyName.toLowerCase().includes(searchLower) ||
         amountTerms.toLowerCase().includes(searchLower) ||
-        bid.status.toLowerCase().includes(searchLower)
+        status.toLowerCase().includes(searchLower)
       );
     });
 

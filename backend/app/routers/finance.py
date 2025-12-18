@@ -42,7 +42,8 @@ async def get_financing_dashboard(
             # 3. Get committed bids for each slot
             # Optimization: could query all committed bids for these slots in one go
             bids = await get_bids_by_slot(db, slot.id)
-            committed_bids = [b for b in bids if b.status == "Committed"]
+            # Include Accepted and AwaitingFinalApproval as they are effectively commitments in progress
+            committed_bids = [b for b in bids if b.status in ["Committed", "Accepted", "AwaitingFinalApproval"]]
             
             for bid in committed_bids:
                 # Parse amount from terms (Naive implementation for MVP)
@@ -81,14 +82,11 @@ async def get_operator_financing_overview(
     
     # Fetch all committed bids
     # We need a direct repository method for efficiency, but using raw find here for MVP speed
-    pipeline = [
-        {"$match": {"status": "Committed"}},
-        # We need to parse 'amount_terms' which is string... this is hard in aggregation without regex
-        # So we'll fetch and process in python for MVP (low volume assumption)
-    ]
+    # Including Accepted and AwaitingFinalApproval to reflect all agreed deals
+    query = {"status": {"$in": ["Committed", "Accepted", "AwaitingFinalApproval"]}}
     
     committed_bids = []
-    cursor = db["bids"].find({"status": "Committed"})
+    cursor = db["bids"].find(query)
     async for doc in cursor:
         committed_bids.append(doc)
         

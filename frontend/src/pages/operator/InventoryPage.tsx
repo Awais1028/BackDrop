@@ -35,27 +35,27 @@ const InventoryPage = () => {
 
     const fetchData = async () => {
         try {
+            console.log("Fetching inventory data...");
             // Need endpoints for all scripts and slots - reusing existing ones naively
             // In a real operator view, we'd have dedicated paginated/filtered endpoints
             const allScripts = await api.get<ProjectScript[]>('/projects'); // Assuming this returns all if no creator filter? Or we need a new endpoint
-            // Wait, /projects currently filters by creator_id if role is creator.
-            // If operator, maybe it should return all. Let's check backend logic.
-            // ... Logic in projects.py: "return await get_projects_by_creator(db, current_user.id)" - this is restrictive.
-            // We need to update backend to allow operators to see all projects.
-            
-            // Temporary workaround: Client side fetching won't work well if backend restricts.
-            // Assuming we update backend shortly or fetch via a new operator endpoint.
-            // For now, let's assume /projects will be updated to return all for operators.
+            console.log("Scripts fetched:", allScripts);
             
             const allSlots = await api.get<IntegrationSlot[]>('/slots');
+            console.log("Slots fetched:", allSlots);
             
-            setScripts(allScripts);
-            setSlots(allSlots);
+            setScripts(allScripts || []);
+            setSlots(allSlots || []);
 
             try {
                 const allUsers = await api.get<User[]>('/auth/users');
+                console.log("Users fetched:", allUsers);
                 const map = new Map<string, string>();
-                allUsers.forEach(u => map.set(u.id, u.name));
+                allUsers.forEach(u => {
+                    if (u && u.id) {
+                        map.set(u.id, u.name || 'Unknown');
+                    }
+                });
                 setUsersMap(map);
             } catch (err) {
                 console.error("Failed to fetch users", err);
@@ -79,26 +79,35 @@ const InventoryPage = () => {
   };
 
   const processedScripts = useMemo(() => {
-    let filtered = scripts.filter(script =>
-      script.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (usersMap.get(script.creatorId || script.creator_id || '') || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    if (!scripts) return [];
+    try {
+        let filtered = scripts.filter(script => {
+            if (!script) return false;
+            const titleMatch = (script.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const creatorName = usersMap.get(script.creatorId || script.creator_id || '') || '';
+            const creatorMatch = creatorName.toLowerCase().includes(searchTerm.toLowerCase());
+            return titleMatch || creatorMatch;
+        });
 
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.createdDate || a.created_date || 0).getTime();
-      const dateB = new Date(b.createdDate || b.created_date || 0).getTime();
-      
-      switch (sortBy) {
-        case 'title-asc': return a.title.localeCompare(b.title);
-        case 'title-desc': return b.title.localeCompare(a.title);
-        case 'date-asc': return dateA - dateB;
-        case 'date-desc':
-        default:
-          return dateB - dateA;
-      }
-    });
+        filtered.sort((a, b) => {
+          const dateA = new Date(a.createdDate || a.created_date || 0).getTime();
+          const dateB = new Date(b.createdDate || b.created_date || 0).getTime();
+          
+          switch (sortBy) {
+            case 'title-asc': return (a.title || '').localeCompare(b.title || '');
+            case 'title-desc': return (b.title || '').localeCompare(a.title || '');
+            case 'date-asc': return dateA - dateB;
+            case 'date-desc':
+            default:
+              return dateB - dateA;
+          }
+        });
 
-    return filtered;
+        return filtered;
+    } catch (e) {
+        console.error("Error in processing scripts:", e);
+        return [];
+    }
   }, [scripts, searchTerm, sortBy, usersMap]);
 
   const pageCount = Math.ceil(processedScripts.length / ITEMS_PER_PAGE);
@@ -179,17 +188,23 @@ const InventoryPage = () => {
                       <p className="text-sm text-gray-500 px-4 py-2">No integration slots tagged for this script.</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2">
-                        {scriptSlots.map(slot => (
-                          <Card key={slot.id}>
-                            <CardHeader>
-                              <CardTitle className="flex justify-between items-center">
-                                {slot.sceneRef}
-                                <Badge variant={getStatusVariant(slot.status)}>{slot.status}</Badge>
-                              </CardTitle>
-                              <CardDescription>{slot.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="text-sm"><strong>Pricing Floor:</strong> ${slot.pricingFloor.toLocaleString()}</p>
+                        {scriptSlots.map(slot => {
+                          const price = slot.pricingFloor ?? slot.pricing_floor;
+                          const formattedPrice = (price !== undefined && price !== null)
+                            ? Number(price).toLocaleString()
+                            : 'N/A';
+
+                          return (
+                            <Card key={slot.id}>
+                              <CardHeader>
+                                <CardTitle className="flex justify-between items-center">
+                                  {slot.sceneRef || slot.scene_ref || 'Untitled Scene'}
+                                  <Badge variant={getStatusVariant(slot.status)}>{slot.status}</Badge>
+                                </CardTitle>
+                                <CardDescription>{slot.description}</CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm"><strong>Pricing Floor:</strong> ${formattedPrice}</p>
                               <p className="text-sm"><strong>Modality:</strong> {slot.modality}</p>
                               <div className="flex items-center gap-2 mt-2">
                                 <Label htmlFor={`visibility-${slot.id}`} className="text-sm font-medium">Visibility:</Label>
@@ -208,7 +223,8 @@ const InventoryPage = () => {
                               </div>
                             </CardContent>
                           </Card>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </AccordionContent>

@@ -3,7 +3,7 @@ import { User, ProjectScript, IntegrationSlot, SKU, BidReservation, FinancingCom
 import { toast } from 'sonner';
 
 export const generateAndStoreDummyData = () => {
-  const DUMMY_DATA_VERSION = '2.0'; // Increment this version to force regeneration
+  const DUMMY_DATA_VERSION = '2.1'; // Increment this version to force regeneration
   const storedVersion = localStorage.getItem('dummyDataVersion');
 
   if (storedVersion === DUMMY_DATA_VERSION) {
@@ -59,21 +59,21 @@ export const generateAndStoreDummyData = () => {
   localStorage.setItem('skus', JSON.stringify(skus));
 
   // --- Bid Reservations with Comments ---
-  const bid1: BidReservation = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot1.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$6000', flightWindow: 'Feb 2025', status: 'Pending', comments: [], creatorFinalApproval: false, buyerFinalApproval: false, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid1: BidReservation = { id: uuidv4(), counterpartyId: advertiserUser.id, slot_id: slot1.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$6000', flightWindow: 'Feb 2025', status: 'Pending', comments: [], creatorFinalApproval: false, buyerFinalApproval: false, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   
   const bid2Comments: Comment[] = [
     { id: uuidv4(), authorId: creatorUser.id, text: "Deal accepted! Let's finalize the integration details here.", timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
     { id: uuidv4(), authorId: advertiserUser.id, text: "Great! Can we ensure the gadget has a prominent close-up shot?", timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
   ];
-  const bid2: BidReservation = { id: uuidv4(), counterpartyId: advertiserUser.id, slotId: slot2.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$15000', flightWindow: 'Apr 2025', status: 'AwaitingFinalApproval', comments: bid2Comments, creatorFinalApproval: false, buyerFinalApproval: false, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid2: BidReservation = { id: uuidv4(), counterpartyId: advertiserUser.id, slot_id: slot2.id, objective: 'Reach', pricingModel: 'Fixed', amountTerms: '$15000', flightWindow: 'Apr 2025', status: 'AwaitingFinalApproval', comments: bid2Comments, creatorFinalApproval: false, buyerFinalApproval: false, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   
-  const bid3: BidReservation = { id: uuidv4(), counterpartyId: merchantUser.id, slotId: slot3.id, objective: 'Conversions', pricingModel: 'Rev-Share', amountTerms: '10% GMV', flightWindow: 'Oct 2025', status: 'Declined', comments: [], creatorFinalApproval: false, buyerFinalApproval: false, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
+  const bid3: BidReservation = { id: uuidv4(), counterpartyId: merchantUser.id, slot_id: slot3.id, objective: 'Conversions', pricingModel: 'Rev-Share', amountTerms: '10% GMV', flightWindow: 'Oct 2025', status: 'Declined', comments: [], creatorFinalApproval: false, buyerFinalApproval: false, createdDate: new Date().toISOString(), lastModifiedDate: new Date().toISOString() };
   
   localStorage.setItem('bidReservations', JSON.stringify([bid1, bid2, bid3]));
 
   // --- Financing Commitments ---
   const commitments: FinancingCommitment[] = [
-    { id: uuidv4(), slotId: bid2.slotId, bidId: bid2.id, counterpartyId: bid2.counterpartyId, committedAmount: 15000, paidDeposit: false, schedule: 'Upon final approval', createdDate: new Date().toISOString() },
+    { id: uuidv4(), slotId: bid2.slot_id || bid2.slotId || '', bidId: bid2.id, counterpartyId: bid2.counterpartyId, committedAmount: 15000, paidDeposit: false, schedule: 'Upon final approval', createdDate: new Date().toISOString() },
   ];
   localStorage.setItem('financingCommitments', JSON.stringify(commitments));
 

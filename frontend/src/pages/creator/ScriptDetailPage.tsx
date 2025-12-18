@@ -352,11 +352,11 @@ const ScriptDetailPage = () => {
                 <p className="text-sm"><strong>Status:</strong> <span className={slot.status === 'Available' ? 'text-green-600' : 'text-gray-600'}>{slot.status}</span></p>
                 <p className="text-sm"><strong>Visibility:</strong> {slot.visibility}</p>
                 <h3 className="text-md font-semibold mt-4 mb-2">Bids for this Slot:</h3>
-                {bids.filter(bid => bid.slotId === slot.id).length === 0 ? (
+                {bids.filter(bid => (bid.slotId || bid.slot_id) === slot.id).length === 0 ? (
                   <p className="text-sm text-gray-500">No bids yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    {bids.filter(bid => bid.slotId === slot.id).map(bid => (
+                    {bids.filter(bid => (bid.slotId || bid.slot_id) === slot.id).map(bid => (
                       <div key={bid.id} className={`p-3 rounded-md border-l-4 ${getBidStatusStyle(bid.status).borderColor} bg-background`}>
                         <p className="font-semibold text-sm">From: {usersMap.get(bid.counterpartyId || bid.counterparty_id || '') || 'Unknown Advertiser'}</p>
                         <p className="text-sm">Terms: {bid.amountTerms || bid.amount_terms}</p>
